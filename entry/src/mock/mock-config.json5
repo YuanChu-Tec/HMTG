@@ -1,0 +1,5 @@
+{
+  "libhome.so": {
+    "source": "src/mock/Libhome.mock.ets"
+  }
+}

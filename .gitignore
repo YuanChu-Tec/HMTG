@@ -1,0 +1,52 @@
+# --- 依赖目录 (绝对不能提交，文件数量巨大) ---
+/node_modules/
+/oh_modules/
+**/oh_modules/
+
+# --- 库文件（过于巨大，分开上传） ---
+#/entry/src/main/cpp/types/thirdparty/tdlib/
+#/entry/src/main/cpp/types/thirdparty/webrtc/
+
+# --- 构建产物与缓存 (每次编译都会变) ---
+/build/
+/.cxx/
+/.preview/
+/.hvigor/
+.hvigor_proxy/
+**/*.lock
+
+# --- IDE 配置 (避免开发者之间配置冲突) ---
+/.idea/
+*.iml
+/.vscode/
+/.clangd
+/.clang-format
+/.clang-tidy
+
+# --- 本地与系统文件 ---
+/local.properties
+*.keystore
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# --- 可选：包管理锁文件 (根据团队规范决定是否提交) ---
+# oh-package-lock.json5
+
+# --- 测试相关 ---
+**/.test/
+/.appanalyzer/
+
+# --- 项目特定配置 ---
+# Telegram API 凭证（勿提交真实 api_hash）
+entry/src/main/ets/services/config/TelegramApiConfig.ets
+
+# AI IDE 配置
+/.lingma/
+/.comate/
+/.codebuddy/
+
+# 参考文件
+/reference/
+/docs/

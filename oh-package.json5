@@ -1,0 +1,13 @@
+{
+  "modelVersion": "6.0.2",
+  "description": "Please describe the basic information.",
+  "dependencies": {
+    "@ohos/pinyin4js": "^2.0.2",
+    "@ohos/zxing": "^2.1.2"
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.25",
+    "@ohos/hamock": "1.0.0"
+  },
+  "dynamicDependencies": {}
+}

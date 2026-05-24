@@ -1,0 +1,3008 @@
+{
+  "string": [
+    {
+      "name": "welcome_app_name",
+      "value": "HMTG"
+    },
+    {
+      "name": "welcome_subtitle",
+      "value": "Telegram for HarmonyOS"
+    },
+    {
+      "name": "welcome_message",
+      "value": "欢迎使用 HMTG"
+    },
+    {
+      "name": "login_button",
+      "value": "登录"
+    },
+    {
+      "name": "logout_button",
+      "value": "退出登录"
+    },
+    {
+      "name": "settings_title",
+      "value": "设置"
+    },
+    {
+      "name": "module_desc",
+      "value": "HMTG 主模块"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "HMTG"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "HMTG 主 Ability"
+    },
+    {
+      "name": "internet_reason",
+      "value": "需要网络连接以访问 Telegram 服务"
+    },
+    {
+      "name": "camera_reason",
+      "value": "需要相机权限以拍摄照片和视频"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "需要麦克风权限以发送语音消息"
+    },
+    {
+      "name": "read_imagevideo_reason",
+      "value": "用于从相册选择图片或视频发送"
+    },
+    {
+      "name": "write_imagevideo_reason",
+      "value": "用于将图片或视频保存到用户公共目录"
+    },
+    {
+      "name": "media_location_reason",
+      "value": "用于访问媒体文件中的地理位置信息"
+    },
+    {
+      "name": "push_notification_reason",
+      "value": "用于接收 Telegram 消息推送通知"
+    },
+    {
+      "name": "network_state_reason",
+      "value": "用于监听网络状态变化，优化消息发送策略"
+    },
+    {
+      "name": "pinned_messages_title",
+      "value": "置顶消息"
+    },
+    {
+      "name": "no_pinned_messages",
+      "value": "暂无置顶消息"
+    },
+    {
+      "name": "pin_message_hint",
+      "value": "长按消息可选择\"置顶\""
+    },
+    {
+      "name": "unpin_button",
+      "value": "取消置顶"
+    },
+    {
+      "name": "loading_text",
+      "value": "加载中..."
+    },
+    {
+      "name": "auth_phone_hint",
+      "value": "请输入您的手机号码以继续"
+    },
+    {
+      "name": "auth_next",
+      "value": "下一步"
+    },
+    {
+      "name": "auth_country_code_placeholder",
+      "value": "+86"
+    },
+    {
+      "name": "auth_sending",
+      "value": "发送验证码中..."
+    },
+    {
+      "name": "auth_agree_prefix",
+      "value": "继续即表示您同意"
+    },
+    {
+      "name": "auth_terms",
+      "value": "服务条款"
+    },
+    {
+      "name": "auth_and",
+      "value": "和"
+    },
+    {
+      "name": "auth_privacy",
+      "value": "隐私政策"
+    },
+    {
+      "name": "auth_login_with_bot",
+      "value": "使用 Bot Token 登录"
+    },
+    {
+      "name": "auth_error_invalid_phone",
+      "value": "请输入有效的手机号码"
+    },
+    {
+      "name": "auth_error_send_failed",
+      "value": "发送验证码失败，请重试"
+    },
+    {
+      "name": "auth_cannot_open_link",
+      "value": "无法打开链接"
+    },
+    {
+      "name": "chats_title",
+      "value": "Telegram"
+    },
+    {
+      "name": "filter_all",
+      "value": "全部"
+    },
+    {
+      "name": "filter_pinned",
+      "value": "置顶"
+    },
+    {
+      "name": "filter_unread",
+      "value": "未读"
+    },
+    {
+      "name": "filter_muted",
+      "value": "静音"
+    },
+    {
+      "name": "button_pin",
+      "value": "置顶"
+    },
+    {
+      "name": "button_mute",
+      "value": "静音"
+    },
+    {
+      "name": "button_archive",
+      "value": "归档"
+    },
+    {
+      "name": "button_delete",
+      "value": "删除"
+    },
+    {
+      "name": "no_chats",
+      "value": "暂无聊天"
+    },
+    {
+      "name": "start_chatting_hint",
+      "value": "开始与好友或群组聊天"
+    },
+    {
+      "name": "chat_info_title",
+      "value": "聊天信息"
+    },
+    {
+      "name": "notifications_label",
+      "value": "通知"
+    },
+    {
+      "name": "pin_chat_label",
+      "value": "置顶聊天"
+    },
+    {
+      "name": "members_label",
+      "value": "成员"
+    },
+    {
+      "name": "actions_label",
+      "value": "操作"
+    },
+    {
+      "name": "search_messages_label",
+      "value": "搜索消息"
+    },
+    {
+      "name": "view_media_label",
+      "value": "查看媒体"
+    },
+    {
+      "name": "clear_chat_label",
+      "value": "清空聊天"
+    },
+    {
+      "name": "member_list_label",
+      "value": "成员列表"
+    },
+    {
+      "name": "search_messages_placeholder",
+      "value": "搜索消息..."
+    },
+    {
+      "name": "filter_media",
+      "value": "媒体"
+    },
+    {
+      "name": "filter_files",
+      "value": "文件"
+    },
+    {
+      "name": "filter_links",
+      "value": "链接"
+    },
+    {
+      "name": "search_history_label",
+      "value": "搜索历史"
+    },
+    {
+      "name": "searching_text",
+      "value": "搜索中..."
+    },
+    {
+      "name": "no_messages_found",
+      "value": "未找到相关消息"
+    },
+    {
+      "name": "type_message_placeholder",
+      "value": "输入消息..."
+    },
+    {
+      "name": "just_now",
+      "value": "刚刚"
+    },
+    {
+      "name": "minutes_ago",
+      "value": "{0}分钟前"
+    },
+    {
+      "name": "hours_ago",
+      "value": "{0}小时前"
+    },
+    {
+      "name": "days_ago",
+      "value": "{0}天前"
+    },
+    {
+      "name": "months_ago",
+      "value": "{0}个月前"
+    },
+    {
+      "name": "years_ago",
+      "value": "{0}年前"
+    },
+    {
+      "name": "yesterday",
+      "value": "昨天"
+    },
+    {
+      "name": "send_button",
+      "value": "📤"
+    },
+    {
+      "name": "chat_not_found",
+      "value": "聊天不存在"
+    },
+    {
+      "name": "info_tab",
+      "value": "信息"
+    },
+    {
+      "name": "members_tab",
+      "value": "成员"
+    },
+    {
+      "name": "settings_tab",
+      "value": "设置"
+    },
+    {
+      "name": "members_count",
+      "value": "成员数"
+    },
+    {
+      "name": "chat_type_label",
+      "value": "类型"
+    },
+    {
+      "name": "chat_type_group",
+      "value": "群组"
+    },
+    {
+      "name": "chat_type_channel",
+      "value": "频道"
+    },
+    {
+      "name": "chat_type_private",
+      "value": "私聊"
+    },
+    {
+      "name": "chat_type_bot",
+      "value": "机器人"
+    },
+    {
+      "name": "mute_action",
+      "value": "静音"
+    },
+    {
+      "name": "unmute_action",
+      "value": "取消静音"
+    },
+    {
+      "name": "pin_action",
+      "value": "置顶"
+    },
+    {
+      "name": "unpin_action",
+      "value": "取消置顶"
+    },
+    {
+      "name": "clear_history_action",
+      "value": "清空历史"
+    },
+    {
+      "name": "no_members_yet",
+      "value": "暂无成员"
+    },
+    {
+      "name": "settings_developing",
+      "value": "设置功能开发中"
+    },
+    {
+      "name": "contacts_title",
+      "value": "联系人"
+    },
+    {
+      "name": "search_contacts_placeholder",
+      "value": "搜索联系人"
+    },
+    {
+      "name": "no_contacts_yet",
+      "value": "暂无联系人"
+    },
+    {
+      "name": "add_contacts_hint",
+      "value": "从手机通讯录添加或搜索好友"
+    },
+    {
+      "name": "tab_chat",
+      "value": "聊天"
+    },
+    {
+      "name": "tab_contacts",
+      "value": "联系人"
+    },
+    {
+      "name": "tab_settings",
+      "value": "设置"
+    },
+    {
+      "name": "tab_profile",
+      "value": "我的"
+    },
+    {
+      "name": "about_title",
+      "value": "关于"
+    },
+    {
+      "name": "app_name_display",
+      "value": "HMTG Harmony"
+    },
+    {
+      "name": "version_label",
+      "value": "版本"
+    },
+    {
+      "name": "build_label",
+      "value": "构建"
+    },
+    {
+      "name": "copy_version_info",
+      "value": "复制版本信息"
+    },
+    {
+      "name": "main_features",
+      "value": "主要功能"
+    },
+    {
+      "name": "feature_chat",
+      "value": "即时通讯"
+    },
+    {
+      "name": "feature_chat_desc",
+      "value": "发送消息、语音通话"
+    },
+    {
+      "name": "feature_groups",
+      "value": "群组聊天"
+    },
+    {
+      "name": "feature_groups_desc",
+      "value": "创建和管理群组"
+    },
+    {
+      "name": "feature_channels",
+      "value": "频道订阅"
+    },
+    {
+      "name": "feature_channels_desc",
+      "value": "关注和浏览频道"
+    },
+    {
+      "name": "feature_files",
+      "value": "文件共享"
+    },
+    {
+      "name": "feature_files_desc",
+      "value": "发送各种类型的文件"
+    },
+    {
+      "name": "feature_privacy",
+      "value": "隐私保护"
+    },
+    {
+      "name": "feature_privacy_desc",
+      "value": "端到端加密聊天"
+    },
+    {
+      "name": "links_resources",
+      "value": "链接和资源"
+    },
+    {
+      "name": "privacy_policy",
+      "value": "隐私政策"
+    },
+    {
+      "name": "terms_of_service",
+      "value": "服务条款"
+    },
+    {
+      "name": "open_source",
+      "value": "开源代码"
+    },
+    {
+      "name": "check_update",
+      "value": "检查更新"
+    },
+    {
+      "name": "based_on_telegram",
+      "value": "基于 Telegram API 构建"
+    },
+    {
+      "name": "thanks_telegram",
+      "value": "感谢 Telegram 团队的支持"
+    },
+    {
+      "name": "apache_license",
+      "value": "本项目遵循 Apache License 2.0 开源许可"
+    },
+    {
+      "name": "donate_title",
+      "value": "捐助"
+    },
+    {
+      "name": "thanks_for_support",
+      "value": "感谢支持"
+    },
+    {
+      "name": "donate_description",
+      "value": "您的支持有助于项目的持续维护与功能开发。"
+    },
+    {
+      "name": "recommend_alipay",
+      "value": "推荐使用支付宝"
+    },
+    {
+      "name": "wechat_pay",
+      "value": "微信支付"
+    },
+    {
+      "name": "two_factor_password_title",
+      "value": "输入两步验证密码"
+    },
+    {
+      "name": "media_library_title",
+      "value": "媒体库"
+    },
+    {
+      "name": "media_loading",
+      "value": "加载中..."
+    },
+    {
+      "name": "media_empty",
+      "value": "暂无媒体文件"
+    },
+    {
+      "name": "media_image_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "media_image_confirm",
+      "value": "确定"
+    },
+    {
+      "name": "media_gallery_all",
+      "value": "全部"
+    },
+    {
+      "name": "media_image_title",
+      "value": "图片"
+    },
+    {
+      "name": "media_video_title",
+      "value": "视频"
+    },
+    {
+      "name": "two_factor_password_hint",
+      "value": "您的账户启用了两步验证"
+    },
+    {
+      "name": "forgot_password_text",
+      "value": "忘记密码？"
+    },
+    {
+      "name": "phone_input_title",
+      "value": "输入手机号"
+    },
+    {
+      "name": "phone_input_hint",
+      "value": "我们将向您的手机发送一条验证码"
+    },
+    {
+      "name": "agreement_text",
+      "value": "我已阅读并同意"
+    },
+    {
+      "name": "user_agreement_text",
+      "value": "用户协议"
+    },
+    {
+      "name": "and_text",
+      "value": " 和 "
+    },
+    {
+      "name": "privacy_policy_text",
+      "value": "隐私政策"
+    },
+    {
+      "name": "code_verification_title",
+      "value": "输入验证码"
+    },
+    {
+      "name": "resend_code_text",
+      "value": "重新发送"
+    },
+    {
+      "name": "change_phone_text",
+      "value": "更换手机号"
+    },
+    {
+      "name": "auth_update_app",
+      "value": "请更新应用版本后再登录"
+    },
+    {
+      "name": "auth_config_api",
+      "value": "请先配置 API 凭证（TelegramApiConfig / my.telegram.org）"
+    },
+    {
+      "name": "auth_init_failed",
+      "value": "请先完成初始化（或检查 API 配置）"
+    },
+    {
+      "name": "auth_service_not_ready",
+      "value": "服务尚未就绪，请稍后重试"
+    },
+    {
+      "name": "auth_phone_banned",
+      "value": "该号码或账号受限，无法登录"
+    },
+    {
+      "name": "auth_phone_invalid",
+      "value": "手机号格式有误，请检查"
+    },
+    {
+      "name": "auth_phone_flood",
+      "value": "请求验证码过于频繁，请稍后再试"
+    },
+    {
+      "name": "auth_phone_app_signup_forbidden",
+      "value": "此应用暂不支持注册"
+    },
+    {
+      "name": "auth_phone_password_protected",
+      "value": "该号码已开启密码保护"
+    },
+    {
+      "name": "auth_phone_password_flood",
+      "value": "尝试次数过多，请稍后再试"
+    },
+    {
+      "name": "auth_phone_migrate",
+      "value": "请稍后重试或更换网络"
+    },
+    {
+      "name": "auth_phone_code_expired",
+      "value": "验证码已过期，请重新获取"
+    },
+    {
+      "name": "auth_phone_code_invalid",
+      "value": "验证码错误，请检查后重试"
+    },
+    {
+      "name": "auth_code_not_ready",
+      "value": "验证码尚未下发，请稍候或检查网络后重试"
+    },
+    {
+      "name": "auth_flood_wait",
+      "value": "请求过于频繁，请稍后再试"
+    },
+    {
+      "name": "auth_flood_wait_seconds",
+      "value": "请求过于频繁，请{0}秒后再试"
+    },
+    {
+      "name": "auth_flood_wait_hours",
+      "value": "请求过于频繁，请约{0}小时后再试"
+    },
+    {
+      "name": "auth_password_invalid",
+      "value": "密码错误，请重试"
+    },
+    {
+      "name": "auth_user_deactivated",
+      "value": "账号已停用，无法登录"
+    },
+    {
+      "name": "auth_session_revoked",
+      "value": "会话已失效，请重新登录"
+    },
+    {
+      "name": "auth_recovery_code_expired",
+      "value": "恢复码已过期，请重新获取"
+    },
+    {
+      "name": "auth_network_error",
+      "value": "网络异常，请检查后重试"
+    },
+    {
+      "name": "auth_timeout",
+      "value": "请求超时，请重试"
+    },
+    {
+      "name": "auth_op_failed",
+      "value": "操作失败，请重试"
+    },
+    {
+      "name": "auth_error_empty_name",
+      "value": "请输入姓名"
+    },
+    {
+      "name": "auth_register_failed",
+      "value": "注册失败，请检查网络连接"
+    },
+    {
+      "name": "auth_country_picker_title",
+      "value": "选择国家/地区"
+    },
+    {
+      "name": "auth_code_wait_hint",
+      "value": "正在等待验证码下发方式…请稍候。"
+    },
+    {
+      "name": "auth_code_hint_telegram",
+      "value": "验证码已发送到您的 Telegram 客户端（其他已登录设备），请查收。"
+    },
+    {
+      "name": "auth_code_hint_sms",
+      "value": "验证码已通过短信发送到您的手机，请查收。"
+    },
+    {
+      "name": "auth_code_hint_call",
+      "value": "验证码将通过电话语音告知，请接听来电。"
+    },
+    {
+      "name": "auth_code_hint_flash_call",
+      "value": "请查看来电号码末几位作为验证码。"
+    },
+    {
+      "name": "auth_code_hint_missed_call",
+      "value": "请查看未接来电号码末几位作为验证码。"
+    },
+    {
+      "name": "auth_code_hint_default",
+      "value": "我们已向您的手机或 Telegram 客户端发送验证码，请查收。"
+    },
+    {
+      "name": "auth_resend_wait_hint",
+      "value": "若未收到，请等待倒计时后点击「重新发送」。"
+    },
+    {
+      "name": "auth_code_placeholder_n",
+      "value": "请输入{0}位验证码"
+    },
+    {
+      "name": "auth_code_placeholder_range",
+      "value": "请输入 4-8 位验证码"
+    },
+    {
+      "name": "auth_error_code_n",
+      "value": "请输入{0}位数字验证码"
+    },
+    {
+      "name": "auth_error_code_range",
+      "value": "请输入 4-8 位数字验证码"
+    },
+    {
+      "name": "auth_resend",
+      "value": "重新发送验证码"
+    },
+    {
+      "name": "auth_resend_after",
+      "value": "{0} 秒后可重新发送"
+    },
+    {
+      "name": "auth_toast_resent",
+      "value": "验证码已重新发送"
+    },
+    {
+      "name": "auth_toast_resend_failed",
+      "value": "重新发送失败，请稍后重试"
+    },
+    {
+      "name": "AuthResendWaitHint",
+      "value": "若未收到，请等待倒计时后点击「重新发送」。"
+    },
+    {
+      "name": "AuthCodePlaceholderN",
+      "value": "请输入{0}位验证码"
+    },
+    {
+      "name": "AuthCodePlaceholderRange",
+      "value": "请输入 4-8 位验证码"
+    },
+    {
+      "name": "AuthErrorCodeN",
+      "value": "请输入{0}位数字验证码"
+    },
+    {
+      "name": "AuthErrorCodeRange",
+      "value": "请输入 4-8 位数字验证码"
+    },
+    {
+      "name": "AuthToastResent",
+      "value": "验证码已重新发送"
+    },
+    {
+      "name": "AuthToastResendFailed",
+      "value": "重新发送失败，请稍后重试"
+    },
+    {
+      "name": "AuthNext",
+      "value": "下一步"
+    },
+    {
+      "name": "AuthResend",
+      "value": "重新发送验证码"
+    },
+    {
+      "name": "AuthOpFailed",
+      "value": "操作失败，请重试"
+    },
+    {
+      "name": "settings_profile",
+      "value": "个人资料"
+    },
+    {
+      "name": "settings_profile_desc",
+      "value": "头像、昵称、手机号"
+    },
+    {
+      "name": "settings_notifications",
+      "value": "通知设置"
+    },
+    {
+      "name": "settings_notifications_desc",
+      "value": "声音、振动、通知预览"
+    },
+    {
+      "name": "settings_privacy",
+      "value": "隐私与安全"
+    },
+    {
+      "name": "settings_privacy_desc",
+      "value": "最后在线、在线状态"
+    },
+    {
+      "name": "settings_data",
+      "value": "数据和存储"
+    },
+    {
+      "name": "settings_data_desc",
+      "value": "存储使用、网络"
+    },
+    {
+      "name": "settings_language",
+      "value": "语言"
+    },
+    {
+      "name": "settings_language_desc",
+      "value": "中文、English"
+    },
+    {
+      "name": "settings_theme",
+      "value": "深色主题"
+    },
+    {
+      "name": "settings_theme_desc",
+      "value": "切换深色/浅色模式"
+    },
+    {
+      "name": "settings_chat",
+      "value": "聊天设置"
+    },
+    {
+      "name": "settings_chat_desc",
+      "value": "消息、通知、主题"
+    },
+    {
+      "name": "settings_about",
+      "value": "关于"
+    },
+    {
+      "name": "settings_about_desc",
+      "value": "版本信息、开源许可"
+    },
+    {
+      "name": "settings_logout",
+      "value": "退出登录"
+    },
+    {
+      "name": "settings_logout_desc",
+      "value": "退出当前账户"
+    },
+    {
+      "name": "profile_title",
+      "value": "个人资料"
+    },
+    {
+      "name": "change_avatar",
+      "value": "更换头像"
+    },
+    {
+      "name": "edit",
+      "value": "编辑"
+    },
+    {
+      "name": "cancel",
+      "value": "取消"
+    },
+    {
+      "name": "username_label",
+      "value": "用户名"
+    },
+    {
+      "name": "phone_number",
+      "value": "手机号"
+    },
+    {
+      "name": "not_set",
+      "value": "未设置"
+    },
+    {
+      "name": "copy_username",
+      "value": "复制用户名"
+    },
+    {
+      "name": "bio_label",
+      "value": "个人简介"
+    },
+    {
+      "name": "no_bio",
+      "value": "暂无个人简介"
+    },
+    {
+      "name": "device_info",
+      "value": "设备信息"
+    },
+    {
+      "name": "qr_code",
+      "value": "二维码"
+    },
+    {
+      "name": "share_profile",
+      "value": "分享我的资料"
+    },
+    {
+      "name": "dark_mode",
+      "value": "深色模式"
+    },
+    {
+      "name": "light_mode",
+      "value": "浅色模式"
+    },
+    {
+      "name": "profile_updated_toast",
+      "value": "个人资料已更新"
+    },
+    {
+      "name": "avatar_updated_toast",
+      "value": "头像已更新"
+    },
+    {
+      "name": "avatar_update_failed",
+      "value": "头像更新失败，请重试"
+    },
+    {
+      "name": "user_info_incomplete",
+      "value": "用户信息不完整"
+    },
+    {
+      "name": "qr_generate_failed",
+      "value": "二维码生成失败"
+    },
+    {
+      "name": "username_copied",
+      "value": "用户名已复制"
+    },
+    {
+      "name": "copy_failed",
+      "value": "复制失败"
+    },
+    {
+      "name": "edit_profile",
+      "value": "编辑个人资料"
+    },
+    {
+      "name": "first_name",
+      "value": "名字"
+    },
+    {
+      "name": "last_name",
+      "value": "姓氏"
+    },
+    {
+      "name": "save",
+      "value": "保存"
+    },
+    {
+      "name": "quick_actions",
+      "value": "快捷操作"
+    },
+    {
+      "name": "device_model",
+      "value": "设备型号"
+    },
+    {
+      "name": "os_version",
+      "value": "系统版本"
+    },
+    {
+      "name": "device_id",
+      "value": "设备 ID"
+    },
+    {
+      "name": "manufacturer",
+      "value": "制造商"
+    },
+    {
+      "name": "welcome_description",
+      "value": "快速、简单、安全的消息应用"
+    },
+    {
+      "name": "sign_up_title",
+      "value": "创建个人资料"
+    },
+    {
+      "name": "sign_up_hint",
+      "value": "请输入您的姓名以开始使用"
+    },
+    {
+      "name": "add_avatar_text",
+      "value": "添加头像"
+    },
+    {
+      "name": "first_name_label",
+      "value": "名 *"
+    },
+    {
+      "name": "last_name_label",
+      "value": "姓"
+    },
+    {
+      "name": "username_taken_text",
+      "value": "已被占用"
+    },
+    {
+      "name": "username_available_text",
+      "value": "可用"
+    },
+    {
+      "name": "suggested_username_label",
+      "value": "建议用户名"
+    },
+    {
+      "name": "privacy_settings_title",
+      "value": "隐私设置"
+    },
+    {
+      "name": "phone_number_section",
+      "value": "电话号码"
+    },
+    {
+      "name": "phone_number_everyone",
+      "value": "所有人"
+    },
+    {
+      "name": "phone_number_contacts",
+      "value": "我的联系人"
+    },
+    {
+      "name": "phone_number_hidden",
+      "value": "保密"
+    },
+    {
+      "name": "last_seen_section",
+      "value": "最后在线"
+    },
+    {
+      "name": "profile_photo_section",
+      "value": "个人资料照片"
+    },
+    {
+      "name": "forwarding_section",
+      "value": "转发消息"
+    },
+    {
+      "name": "calls_section",
+      "value": "通话"
+    },
+    {
+      "name": "security_section",
+      "value": "安全"
+    },
+    {
+      "name": "two_factor_auth",
+      "value": "两步验证"
+    },
+    {
+      "name": "two_factor_auth_desc",
+      "value": "通过密码和短信保护您的账户"
+    },
+    {
+      "name": "two_factor_toast",
+      "value": "请先在 HMTG 设置中启用两步验证"
+    },
+    {
+      "name": "login_alerts",
+      "value": "登录提醒"
+    },
+    {
+      "name": "login_alerts_desc",
+      "value": "当有新设备登录时通知我"
+    },
+    {
+      "name": "password_setting",
+      "value": "密码"
+    },
+    {
+      "name": "privacy_settings_saved_toast",
+      "value": "隐私设置已保存"
+    },
+    {
+      "name": "appearance_settings_title",
+      "value": "外观设置"
+    },
+    {
+      "name": "theme_section",
+      "value": "主题"
+    },
+    {
+      "name": "follow_system_theme",
+      "value": "跟随系统"
+    },
+    {
+      "name": "light_theme",
+      "value": "浅色模式"
+    },
+    {
+      "name": "dark_theme",
+      "value": "深色模式"
+    },
+    {
+      "name": "language_section",
+      "value": "语言"
+    },
+    {
+      "name": "app_language",
+      "value": "应用语言"
+    },
+    {
+      "name": "current_language_format",
+      "value": "当前：%s"
+    },
+    {
+      "name": "message_style_section",
+      "value": "消息样式"
+    },
+    {
+      "name": "message_bubble_style",
+      "value": "消息气泡风格"
+    },
+    {
+      "name": "modern_style",
+      "value": "现代风格"
+    },
+    {
+      "name": "classic_style",
+      "value": "经典风格"
+    },
+    {
+      "name": "animations_section",
+      "value": "动画"
+    },
+    {
+      "name": "show_animations",
+      "value": "显示动画"
+    },
+    {
+      "name": "show_animations_desc",
+      "value": "启用界面动画效果"
+    },
+    {
+      "name": "animation_speed",
+      "value": "动画速度"
+    },
+    {
+      "name": "slow_speed",
+      "value": "慢"
+    },
+    {
+      "name": "normal_speed",
+      "value": "正常"
+    },
+    {
+      "name": "fast_speed",
+      "value": "快"
+    },
+    {
+      "name": "other_section",
+      "value": "其他"
+    },
+    {
+      "name": "theme_color",
+      "value": "主题颜色"
+    },
+    {
+      "name": "default_blue",
+      "value": "默认蓝色"
+    },
+    {
+      "name": "appearance_settings_saved_toast",
+      "value": "外观设置已保存"
+    },
+    {
+      "name": "no_messages_yet",
+      "value": "暂无消息"
+    },
+    {
+      "name": "member_count_format",
+      "value": "成员 (%d)"
+    },
+    {
+      "name": "muted_status_on",
+      "value": "已关闭"
+    },
+    {
+      "name": "muted_status_off",
+      "value": "已开启"
+    },
+    {
+      "name": "pinned_status_on",
+      "value": "已置顶"
+    },
+    {
+      "name": "pinned_status_off",
+      "value": "未置顶"
+    },
+    {
+      "name": "shared_media_all",
+      "value": "全部"
+    },
+    {
+      "name": "shared_media_photos",
+      "value": "照片"
+    },
+    {
+      "name": "shared_media_videos",
+      "value": "视频"
+    },
+    {
+      "name": "shared_media_files",
+      "value": "文件"
+    },
+    {
+      "name": "shared_media_voice",
+      "value": "语音"
+    },
+    {
+      "name": "loading_media_text",
+      "value": "加载中..."
+    },
+    {
+      "name": "profile_settings_title",
+      "value": "个人信息"
+    },
+    {
+      "name": "profile_settings_desc",
+      "value": "查看和编辑您的个人资料"
+    },
+    {
+      "name": "notifications_settings_title",
+      "value": "通知设置"
+    },
+    {
+      "name": "notifications_settings_desc",
+      "value": "管理推送和通知"
+    },
+    {
+      "name": "privacy_settings_desc",
+      "value": "控制谁可以看到您"
+    },
+    {
+      "name": "data_storage_title",
+      "value": "数据与存储"
+    },
+    {
+      "name": "data_storage_desc",
+      "value": "管理缓存和存储"
+    },
+    {
+      "name": "language_settings_title",
+      "value": "语言"
+    },
+    {
+      "name": "language_settings_desc",
+      "value": "更改应用语言"
+    },
+    {
+      "name": "dark_theme_title",
+      "value": "深色模式"
+    },
+    {
+      "name": "dark_theme_desc",
+      "value": "切换深色/浅色主题"
+    },
+    {
+      "name": "chat_settings_title",
+      "value": "聊天设置"
+    },
+    {
+      "name": "chat_settings_desc",
+      "value": "字体大小、消息背景等"
+    },
+    {
+      "name": "about_desc",
+      "value": "版本信息和帮助"
+    },
+    {
+      "name": "logout_title",
+      "value": "退出登录"
+    },
+    {
+      "name": "logout_desc",
+      "value": "退出当前账户"
+    },
+    {
+      "name": "user_phone_display",
+      "value": "+%s %s****%s"
+    },
+    {
+      "name": "notification_settings_title",
+      "value": "通知设置"
+    },
+    {
+      "name": "private_chat_notifications",
+      "value": "私聊通知"
+    },
+    {
+      "name": "private_chat_notifications_desc",
+      "value": "接收私聊消息通知"
+    },
+    {
+      "name": "group_notifications",
+      "value": "群组通知"
+    },
+    {
+      "name": "group_notifications_desc",
+      "value": "接收群组消息通知"
+    },
+    {
+      "name": "channel_notifications",
+      "value": "频道通知"
+    },
+    {
+      "name": "channel_notifications_desc",
+      "value": "接收频道更新通知"
+    },
+    {
+      "name": "message_preview_setting",
+      "value": "显示消息预览"
+    },
+    {
+      "name": "message_preview_setting_desc",
+      "value": "在通知栏显示消息内容"
+    },
+    {
+      "name": "priority_messages",
+      "value": "优先消息"
+    },
+    {
+      "name": "priority_messages_desc",
+      "value": "标记重要消息"
+    },
+    {
+      "name": "sound_setting",
+      "value": "声音"
+    },
+    {
+      "name": "sound_setting_desc",
+      "value": "播放通知声音"
+    },
+    {
+      "name": "vibration_setting",
+      "value": "振动"
+    },
+    {
+      "name": "vibration_setting_desc",
+      "value": "振动提醒"
+    },
+    {
+      "name": "led_setting",
+      "value": "LED 灯"
+    },
+    {
+      "name": "led_setting_desc",
+      "value": "使用 LED 灯提醒"
+    },
+    {
+      "name": "popup_setting",
+      "value": "消息弹窗"
+    },
+    {
+      "name": "popup_setting_desc",
+      "value": "新消息时显示弹窗"
+    },
+    {
+      "name": "do_not_disturb_period",
+      "value": "免打扰时段"
+    },
+    {
+      "name": "default_period",
+      "value": "00:00 - 08:00"
+    },
+    {
+      "name": "custom_ringtone",
+      "value": "自定义铃声"
+    },
+    {
+      "name": "default_ringtone",
+      "value": "默认"
+    },
+    {
+      "name": "save_settings_button",
+      "value": "保存设置"
+    },
+    {
+      "name": "settings_saved_toast",
+      "value": "通知设置已保存"
+    },
+    {
+      "name": "notification_types_section",
+      "value": "通知类型"
+    },
+    {
+      "name": "message_preview_section",
+      "value": "消息预览"
+    },
+    {
+      "name": "notification_method_section",
+      "value": "提示方式"
+    },
+    {
+      "name": "popup_settings_section",
+      "value": "弹窗设置"
+    },
+    {
+      "name": "advanced_settings_section",
+      "value": "高级设置"
+    },
+    {
+      "name": "start_messaging",
+      "value": "开始使用"
+    },
+    {
+      "name": "feature_speed",
+      "value": "闪电般的速度"
+    },
+    {
+      "name": "feature_speed_desc",
+      "value": "消息即时送达"
+    },
+    {
+      "name": "feature_encryption",
+      "value": "端到端加密"
+    },
+    {
+      "name": "feature_encryption_desc",
+      "value": "保障隐私安全"
+    },
+    {
+      "name": "my_channels",
+      "value": "我的频道"
+    },
+    {
+      "name": "ok",
+      "value": "确定"
+    },
+    {
+      "name": "done",
+      "value": "完成"
+    },
+    {
+      "name": "delete",
+      "value": "删除"
+    },
+    {
+      "name": "back",
+      "value": "返回"
+    },
+    {
+      "name": "next",
+      "value": "下一步"
+    },
+    {
+      "name": "previous",
+      "value": "上一步"
+    },
+    {
+      "name": "refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "retry",
+      "value": "重试"
+    },
+    {
+      "name": "error_general",
+      "value": "发生错误"
+    },
+    {
+      "name": "success",
+      "value": "成功"
+    },
+    {
+      "name": "warning",
+      "value": "警告"
+    },
+    {
+      "name": "network_error",
+      "value": "网络连接失败，请检查网络设置"
+    },
+    {
+      "name": "server_error",
+      "value": "服务器错误，请稍后重试"
+    },
+    {
+      "name": "connection_error",
+      "value": "连接失败，请检查网络"
+    },
+    {
+      "name": "validation_error",
+      "value": "输入内容验证失败"
+    },
+    {
+      "name": "confirm_delete",
+      "value": "确定要删除吗？"
+    },
+    {
+      "name": "confirm_exit",
+      "value": "确定要退出吗？"
+    },
+    {
+      "name": "confirm_cancel",
+      "value": "确定要取消吗？所有未保存的更改将会丢失。"
+    },
+    {
+      "name": "channels",
+      "value": "频道"
+    },
+    {
+      "name": "create_channel",
+      "value": "创建频道"
+    },
+    {
+      "name": "channel_settings",
+      "value": "频道设置"
+    },
+    {
+      "name": "channel_info",
+      "value": "频道信息"
+    },
+    {
+      "name": "channel_stats",
+      "value": "频道统计"
+    },
+    {
+      "name": "channel_admins",
+      "value": "频道管理员"
+    },
+    {
+      "name": "channel_admins_title",
+      "value": "管理员"
+    },
+    {
+      "name": "channel_role_owner",
+      "value": "所有者"
+    },
+    {
+      "name": "channel_role_administrator",
+      "value": "管理员"
+    },
+    {
+      "name": "channel_role_restricted",
+      "value": "受限"
+    },
+    {
+      "name": "channel_role_member",
+      "value": "成员"
+    },
+    {
+      "name": "no_admins_yet",
+      "value": "暂无管理员"
+    },
+    {
+      "name": "promoted_by",
+      "value": "由 %s 晋升"
+    },
+    {
+      "name": "load_admins_failed",
+      "value": "加载管理员列表失败：%s"
+    },
+    {
+      "name": "navigate_add_admin_failed",
+      "value": "跳转添加管理员页面失败：%s"
+    },
+    {
+      "name": "navigate_contact_detail_failed",
+      "value": "跳转联系人详情页面失败：%s"
+    },
+    {
+      "name": "load_channel_info_failed",
+      "value": "加载频道信息失败：%s"
+    },
+    {
+      "name": "operation_failed",
+      "value": "操作失败：%s"
+    },
+    {
+      "name": "check_subscription_failed",
+      "value": "检查订阅状态失败：%s"
+    },
+    {
+      "name": "subscribers_count_label",
+      "value": "%s 订阅者"
+    },
+    {
+      "name": "subscribe_button",
+      "value": "订阅"
+    },
+    {
+      "name": "join_button",
+      "value": "加入"
+    },
+    {
+      "name": "notifications",
+      "value": "通知"
+    },
+    {
+      "name": "channel_invites",
+      "value": "邀请链接"
+    },
+    {
+      "name": "join_requests",
+      "value": "加入请求"
+    },
+    {
+      "name": "search_channels",
+      "value": "搜索频道"
+    },
+    {
+      "name": "edit_post",
+      "value": "编辑帖子"
+    },
+    {
+      "name": "channel_title",
+      "value": "频道名称"
+    },
+    {
+      "name": "channel_description",
+      "value": "频道描述"
+    },
+    {
+      "name": "channel_username",
+      "value": "频道用户名"
+    },
+    {
+      "name": "channel_type_broadcast",
+      "value": "广播频道"
+    },
+    {
+      "name": "channel_type_megagroup",
+      "value": "超级群组"
+    },
+    {
+      "name": "subscribers_count",
+      "value": "%d 订阅"
+    },
+    {
+      "name": "verified",
+      "value": "已认证"
+    },
+    {
+      "name": "scam",
+      "value": "诈骗"
+    },
+    {
+      "name": "subscribe",
+      "value": "订阅"
+    },
+    {
+      "name": "unsubscribe",
+      "value": "取消订阅"
+    },
+    {
+      "name": "unsubscribe_title",
+      "value": "取消订阅"
+    },
+    {
+      "name": "unsubscribe_message",
+      "value": "确定要取消订阅 %s 吗？"
+    },
+    {
+      "name": "join",
+      "value": "加入"
+    },
+    {
+      "name": "leave",
+      "value": "离开"
+    },
+    {
+      "name": "chats",
+      "value": "聊天"
+    },
+    {
+      "name": "settings",
+      "value": "设置"
+    },
+    {
+      "name": "search",
+      "value": "搜索"
+    },
+    {
+      "name": "archived",
+      "value": "归档"
+    },
+    {
+      "name": "contacts",
+      "value": "联系人"
+    },
+    {
+      "name": "calls",
+      "value": "通话"
+    },
+    {
+      "name": "new_group",
+      "value": "新建群组"
+    },
+    {
+      "name": "log_out",
+      "value": "登出"
+    },
+    {
+      "name": "reply",
+      "value": "回复"
+    },
+    {
+      "name": "forward",
+      "value": "转发"
+    },
+    {
+      "name": "copy",
+      "value": "复制"
+    },
+    {
+      "name": "leave_title",
+      "value": "离开频道"
+    },
+    {
+      "name": "leave_message",
+      "value": "确定要离开 %s 吗？"
+    },
+    {
+      "name": "create",
+      "value": "创建"
+    },
+    {
+      "name": "delete_channel_title",
+      "value": "删除频道"
+    },
+    {
+      "name": "delete_channel_message",
+      "value": "确定要删除频道 %s 吗？此操作不可撤销。"
+    },
+    {
+      "name": "confirm",
+      "value": "确定"
+    },
+    {
+      "name": "views",
+      "value": "浏览"
+    },
+    {
+      "name": "forwards",
+      "value": "转发"
+    },
+    {
+      "name": "reactions",
+      "value": "反应"
+    },
+    {
+      "name": "enable_notifications",
+      "value": "启用通知"
+    },
+    {
+      "name": "mute_notifications",
+      "value": "静音通知"
+    },
+    {
+      "name": "enable_mention_notifications",
+      "value": "启用@提醒"
+    },
+    {
+      "name": "enable_sound",
+      "value": "启用声音"
+    },
+    {
+      "name": "enable_preview",
+      "value": "显示预览"
+    },
+    {
+      "name": "enable_stickers",
+      "value": "启用贴纸"
+    },
+    {
+      "name": "enable_gifs",
+      "value": "启用GIF"
+    },
+    {
+      "name": "enable_bots",
+      "value": "启用机器人"
+    },
+    {
+      "name": "signature_mode",
+      "value": "签名模式"
+    },
+    {
+      "name": "signature_none",
+      "value": "无签名"
+    },
+    {
+      "name": "signature_all",
+      "value": "所有成员"
+    },
+    {
+      "name": "signature_admin",
+      "value": "仅管理员"
+    },
+    {
+      "name": "signature_non_bot",
+      "value": "非机器人"
+    },
+    {
+      "name": "join_to_send",
+      "value": "需要加入才能发送消息"
+    },
+    {
+      "name": "join_by_request",
+      "value": "需要请求才能加入"
+    },
+    {
+      "name": "owner",
+      "value": "所有者"
+    },
+    {
+      "name": "administrator",
+      "value": "管理员"
+    },
+    {
+      "name": "moderator",
+      "value": "版主"
+    },
+    {
+      "name": "member",
+      "value": "成员"
+    },
+    {
+      "name": "promote",
+      "value": "提升为管理员"
+    },
+    {
+      "name": "demote",
+      "value": "降为成员"
+    },
+    {
+      "name": "remove",
+      "value": "移除"
+    },
+    {
+      "name": "invite_link",
+      "value": "邀请链接"
+    },
+    {
+      "name": "create_invite",
+      "value": "创建邀请"
+    },
+    {
+      "name": "revoke_invite",
+      "value": "撤销邀请"
+    },
+    {
+      "name": "invite_link_copied",
+      "value": "邀请链接已复制"
+    },
+    {
+      "name": "permanent_link",
+      "value": "永久链接"
+    },
+    {
+      "name": "expire_date",
+      "value": "过期时间"
+    },
+    {
+      "name": "member_limit",
+      "value": "成员限制"
+    },
+    {
+      "name": "request_count",
+      "value": "请求数"
+    },
+    {
+      "name": "join_count",
+      "value": "加入数"
+    },
+    {
+      "name": "approve",
+      "value": "批准"
+    },
+    {
+      "name": "decline",
+      "value": "拒绝"
+    },
+    {
+      "name": "approve_all",
+      "value": "全部批准"
+    },
+    {
+      "name": "decline_all",
+      "value": "全部拒绝"
+    },
+    {
+      "name": "stats_subscribers",
+      "value": "订阅者"
+    },
+    {
+      "name": "stats_views_per_post",
+      "value": "平均浏览/帖子"
+    },
+    {
+      "name": "stats_forwards_per_post",
+      "value": "平均转发/帖子"
+    },
+    {
+      "name": "stats_reactions_per_post",
+      "value": "平均反应/帖子"
+    },
+    {
+      "name": "stats_growth_rate",
+      "value": "增长率"
+    },
+    {
+      "name": "stats_online_now",
+      "value": "当前在线"
+    },
+    {
+      "name": "stats_top_countries",
+      "value": "主要国家"
+    },
+    {
+      "name": "stats_top_languages",
+      "value": "主要语言"
+    },
+    {
+      "name": "publish_post",
+      "value": "发布"
+    },
+    {
+      "name": "schedule_post",
+      "value": "定时发布"
+    },
+    {
+      "name": "scheduled_posts",
+      "value": "定时发布的帖子"
+    },
+    {
+      "name": "no_channels",
+      "value": "暂无频道"
+    },
+    {
+      "name": "no_results",
+      "value": "无结果"
+    },
+    {
+      "name": "notification_permission_reason",
+      "value": "用于接收频道新消息通知"
+    },
+    {
+      "name": "distributed_sync_reason",
+      "value": "用于在多设备间同步频道订阅状态"
+    },
+    {
+      "name": "internet_permission_reason",
+      "value": "网络访问需要连接Telegram服务器"
+    },
+    {
+      "name": "get_network_info_permission_reason",
+      "value": "获取网络状态信息"
+    },
+    {
+      "name": "forward_messages_section",
+      "value": "转发消息"
+    },
+    {
+      "name": "everyone_option",
+      "value": "所有人"
+    },
+    {
+      "name": "my_contacts_option",
+      "value": "我的联系人"
+    },
+    {
+      "name": "nobody_option",
+      "value": "保密"
+    },
+    {
+      "name": "two_factor_auth_label",
+      "value": "两步验证"
+    },
+    {
+      "name": "login_alerts_label",
+      "value": "登录提醒"
+    },
+    {
+      "name": "settings_saved_synced",
+      "value": "设置已保存并同步到服务器"
+    },
+    {
+      "name": "settings_saved_sync_failed",
+      "value": "设置已保存到本地，同步失败"
+    },
+    {
+      "name": "save_failed_retry",
+      "value": "保存失败，请重试"
+    },
+    {
+      "name": "enable_two_factor_hint",
+      "value": "请先在 Telegram 设置中启用两步验证"
+    },
+    {
+      "name": "password_label",
+      "value": "密码"
+    },
+    {
+      "name": "security_settings_title",
+      "value": "安全设置"
+    },
+    {
+      "name": "security_lock_section",
+      "value": "安全锁定"
+    },
+    {
+      "name": "auto_lock_section",
+      "value": "自动锁定"
+    },
+    {
+      "name": "active_sessions_section",
+      "value": "活跃会话"
+    },
+    {
+      "name": "account_security_section",
+      "value": "账户安全"
+    },
+    {
+      "name": "passcode_lock_label",
+      "value": "密码锁定"
+    },
+    {
+      "name": "passcode_lock_desc",
+      "value": "使用密码锁定应用"
+    },
+    {
+      "name": "biometric_lock_label",
+      "value": "生物识别"
+    },
+    {
+      "name": "biometric_lock_desc",
+      "value": "使用指纹或面容解锁"
+    },
+    {
+      "name": "auto_lock_time_label",
+      "value": "自动锁定时间"
+    },
+    {
+      "name": "auto_lock_hint",
+      "value": "应用后台运行超过此时间后将自动锁定"
+    },
+    {
+      "name": "current_session_label",
+      "value": "当前"
+    },
+    {
+      "name": "terminate_session_button",
+      "value": "终止"
+    },
+    {
+      "name": "change_password_label",
+      "value": "修改密码"
+    },
+    {
+      "name": "delete_account_label",
+      "value": "删除账户"
+    },
+    {
+      "name": "settings_saved",
+      "value": "安全设置已保存"
+    },
+    {
+      "name": "session_terminated",
+      "value": "会话已终止"
+    },
+    {
+      "name": "terminate_failed_retry",
+      "value": "终止失败，请重试"
+    },
+    {
+      "name": "seconds_unit",
+      "value": "秒"
+    },
+    {
+      "name": "minutes_unit",
+      "value": "分钟"
+    },
+    {
+      "name": "font_settings_section",
+      "value": "字体设置"
+    },
+    {
+      "name": "appearance_section",
+      "value": "界面外观"
+    },
+    {
+      "name": "input_settings_section",
+      "value": "输入设置"
+    },
+    {
+      "name": "media_settings_section",
+      "value": "媒体设置"
+    },
+    {
+      "name": "other_settings_section",
+      "value": "其他设置"
+    },
+    {
+      "name": "font_size_label",
+      "value": "字体大小"
+    },
+    {
+      "name": "font_preview_text",
+      "value": "消息预览文本，查看字体大小效果"
+    },
+    {
+      "name": "show_sender_name_label",
+      "value": "显示发送者名称"
+    },
+    {
+      "name": "show_sender_name_desc",
+      "value": "在群组中显示消息发送者"
+    },
+    {
+      "name": "message_background_label",
+      "value": "消息背景"
+    },
+    {
+      "name": "message_bubble_label",
+      "value": "消息气泡"
+    },
+    {
+      "name": "large_emoji_label",
+      "value": "大表情"
+    },
+    {
+      "name": "large_emoji_desc",
+      "value": "发送大表情时显示全屏动画"
+    },
+    {
+      "name": "enter_to_send_label",
+      "value": "按 Enter 发送消息"
+    },
+    {
+      "name": "enter_to_send_desc",
+      "value": "关闭后需要 Ctrl+Enter 发送，Enter 换行"
+    },
+    {
+      "name": "save_to_gallery_label",
+      "value": "保存到相册"
+    },
+    {
+      "name": "save_to_gallery_desc",
+      "value": "自动保存媒体文件到相册"
+    },
+    {
+      "name": "stream_video_label",
+      "value": "流式播放视频"
+    },
+    {
+      "name": "stream_video_desc",
+      "value": "边下载边播放视频"
+    },
+    {
+      "name": "auto_play_gif_label",
+      "value": "自动播放 GIF"
+    },
+    {
+      "name": "auto_play_gif_desc",
+      "value": "自动播放 GIF 动画"
+    },
+    {
+      "name": "chat_background_label",
+      "value": "聊天背景"
+    },
+    {
+      "name": "default_background_value",
+      "value": "默认"
+    },
+    {
+      "name": "select_color_title",
+      "value": "选择颜色"
+    },
+    {
+      "name": "cancel_button",
+      "value": "取消"
+    },
+    {
+      "name": "chat_settings_saved_synced",
+      "value": "聊天设置已保存并同步到服务器"
+    },
+    {
+      "name": "chat_settings_saved_local",
+      "value": "设置已保存到本地，同步失败"
+    },
+    {
+      "name": "appearance_settings_saved_synced",
+      "value": "外观设置已保存并同步到服务器"
+    },
+    {
+      "name": "appearance_settings_saved_local",
+      "value": "设置已保存到本地，同步失败"
+    },
+    {
+      "name": "qr_login_title",
+      "value": "二维码登录"
+    },
+    {
+      "name": "scan_qr_hint",
+      "value": "使用其他设备扫描下方二维码登录"
+    },
+    {
+      "name": "open_telegram_hint",
+      "value": "打开 Telegram → 设置 → 设备 → 扫描二维码"
+    },
+    {
+      "name": "login_success",
+      "value": "登录成功"
+    },
+    {
+      "name": "jumping_text",
+      "value": "正在跳转..."
+    },
+    {
+      "name": "share_login_link",
+      "value": "分享登录链接"
+    },
+    {
+      "name": "qrcode_expire_hint",
+      "value": "二维码 5 分钟后过期"
+    },
+    {
+      "name": "create_profile_title",
+      "value": "创建账号"
+    },
+    {
+      "name": "fill_info_hint",
+      "value": "请填写您的信息"
+    },
+    {
+      "name": "phone_number_label",
+      "value": "手机号码"
+    },
+    {
+      "name": "enter_phone_placeholder",
+      "value": "请输入手机号"
+    },
+    {
+      "name": "agree_tos_prefix",
+      "value": "注册即表示您同意我们的"
+    },
+    {
+      "name": "tos_label",
+      "value": "服务条款"
+    },
+    {
+      "name": "privacy_policy_label",
+      "value": "隐私政策"
+    },
+    {
+      "name": "continue_button",
+      "value": "继续"
+    },
+    {
+      "name": "have_account_login",
+      "value": "已有账号？登录"
+    },
+    {
+      "name": "passcode_unlock_title",
+      "value": "输入锁定码"
+    },
+    {
+      "name": "enter_passcode_placeholder",
+      "value": "锁定码"
+    },
+    {
+      "name": "unlock_button",
+      "value": "解锁"
+    },
+    {
+      "name": "passcode_too_short",
+      "value": "请输入至少 4 位"
+    },
+    {
+      "name": "passcode_incorrect",
+      "value": "锁定码错误"
+    },
+    {
+      "name": "sticker_store_title",
+      "value": "贴纸商店"
+    },
+    {
+      "name": "my_stickers_title",
+      "value": "我的贴纸"
+    },
+    {
+      "name": "featured_stickers",
+      "value": "精选"
+    },
+    {
+      "name": "popular_stickers",
+      "value": "热门"
+    },
+    {
+      "name": "download",
+      "value": "下载"
+    },
+    {
+      "name": "open",
+      "value": "打开"
+    },
+    {
+      "name": "search_placeholder",
+      "value": "搜索贴纸和表情"
+    },
+    {
+      "name": "no_stickers",
+      "value": "暂无贴纸"
+    },
+    {
+      "name": "sticker_count",
+      "value": "{count} 个贴纸"
+    },
+    {
+      "name": "add_button",
+      "value": "添加"
+    },
+    {
+      "name": "add_caption_placeholder",
+      "value": "添加说明文字..."
+    },
+    {
+      "name": "admin_tools_label",
+      "value": "管理员工具"
+    },
+    {
+      "name": "administrators_label",
+      "value": "管理员"
+    },
+    {
+      "name": "advanced_settings_title",
+      "value": "高级设置"
+    },
+    {
+      "name": "agree_to_terms",
+      "value": "同意条款"
+    },
+    {
+      "name": "all",
+      "value": "全部"
+    },
+    {
+      "name": "and",
+      "value": "和"
+    },
+    {
+      "name": "archive",
+      "value": "归档"
+    },
+    {
+      "name": "AuthCannotOpenLink",
+      "value": "无法打开链接"
+    },
+    {
+      "name": "AuthErrorEmptyName",
+      "value": "请输入姓名"
+    },
+    {
+      "name": "AuthErrorInvalidPhone",
+      "value": "手机号格式有误"
+    },
+    {
+      "name": "AuthErrorSendFailed",
+      "value": "发送验证码失败"
+    },
+    {
+      "name": "AuthRegisterFailed",
+      "value": "注册失败"
+    },
+    {
+      "name": "auto_clean_desc",
+      "value": "定期自动清理"
+    },
+    {
+      "name": "auto_clean_label",
+      "value": "自动清理"
+    },
+    {
+      "name": "bot_not_support_call",
+      "value": "机器人不支持通话"
+    },
+    {
+      "name": "cache_cleared",
+      "value": "缓存已清理"
+    },
+    {
+      "name": "cache_compressed",
+      "value": "缓存已压缩"
+    },
+    {
+      "name": "cache_compressing",
+      "value": "压缩中..."
+    },
+    {
+      "name": "cache_hit_rate",
+      "value": "缓存命中率"
+    },
+    {
+      "name": "cache_hits",
+      "value": "缓存命中次数"
+    },
+    {
+      "name": "cache_items",
+      "value": "缓存项目数"
+    },
+    {
+      "name": "cache_management_title",
+      "value": "缓存管理"
+    },
+    {
+      "name": "cache_misses",
+      "value": "缓存未命中次数"
+    },
+    {
+      "name": "cache_preloaded",
+      "value": "已预加载缓存"
+    },
+    {
+      "name": "cache_preloading",
+      "value": "正在预加载缓存"
+    },
+    {
+      "name": "cache_settings_saved",
+      "value": "缓存设置已保存"
+    },
+    {
+      "name": "call_failed_retry",
+      "value": "通话失败，请重试"
+    },
+    {
+      "name": "cannot_preview",
+      "value": "无法预览"
+    },
+    {
+      "name": "channel_info_title",
+      "value": "频道信息"
+    },
+    {
+      "name": "clean_interval_label",
+      "value": "清理间隔"
+    },
+    {
+      "name": "clear",
+      "value": "清除"
+    },
+    {
+      "name": "clear_all_cache_button",
+      "value": "清除所有缓存"
+    },
+    {
+      "name": "clear_all_data_button",
+      "value": "清除所有数据"
+    },
+    {
+      "name": "clear_button",
+      "value": "清除"
+    },
+    {
+      "name": "clear_data_warning",
+      "value": "此操作将删除所有本地数据，包括聊天记录、媒体文件和设置。此操作不可恢复！"
+    },
+    {
+      "name": "clear_failed_retry",
+      "value": "清除失败，请重试"
+    },
+    {
+      "name": "compress_cache_button",
+      "value": "压缩缓存"
+    },
+    {
+      "name": "compress_failed_retry",
+      "value": "压缩失败，请重试"
+    },
+    {
+      "name": "confirm_action",
+      "value": "确认操作"
+    },
+    {
+      "name": "confirm_button",
+      "value": "确定"
+    },
+    {
+      "name": "confirm_clear",
+      "value": "确认清除"
+    },
+    {
+      "name": "confirm_clear_all_cache",
+      "value": "确定要清除所有缓存吗？"
+    },
+    {
+      "name": "confirm_clear_data",
+      "value": "确认清除数据"
+    },
+    {
+      "name": "confirm_clear_data_message",
+      "value": "此操作将删除所有本地数据"
+    },
+    {
+      "name": "confirm_reset",
+      "value": "确认重置"
+    },
+    {
+      "name": "confirm_reset_message",
+      "value": "确定要重置所有设置吗？"
+    },
+    {
+      "name": "contact_copied_to_clipboard",
+      "value": "联系人已复制到剪贴板"
+    },
+    {
+      "name": "contact_deleted",
+      "value": "联系人已删除"
+    },
+    {
+      "name": "contact_not_exist",
+      "value": "联系人不存在"
+    },
+    {
+      "name": "data_cleared_exiting",
+      "value": "数据已清除，正在退出"
+    },
+    {
+      "name": "data_saver_desc",
+      "value": "减少移动数据使用量"
+    },
+    {
+      "name": "data_saver_label",
+      "value": "数据节省模式"
+    },
+    {
+      "name": "debug_mode_desc",
+      "value": "启用开发者调试功能"
+    },
+    {
+      "name": "debug_mode_label",
+      "value": "调试模式"
+    },
+    {
+      "name": "delete_failed_retry",
+      "value": "删除失败，请重试"
+    },
+    {
+      "name": "email_no_recovery_hint",
+      "value": "邮箱未设置恢复选项"
+    },
+    {
+      "name": "enter_passcode_title",
+      "value": "输入锁定码"
+    },
+    {
+      "name": "enter_password_label",
+      "value": "输入密码"
+    },
+    {
+      "name": "enter_password_placeholder",
+      "value": "密码"
+    },
+    {
+      "name": "enter_recovery_code_placeholder",
+      "value": "恢复码"
+    },
+    {
+      "name": "expire_time_label",
+      "value": "过期时间"
+    },
+    {
+      "name": "export_failed_retry",
+      "value": "导出失败，请重试"
+    },
+    {
+      "name": "export_logs_button",
+      "value": "导出日志"
+    },
+    {
+      "name": "exporting_logs",
+      "value": "正在导出日志..."
+    },
+    {
+      "name": "first_name_placeholder",
+      "value": "名字"
+    },
+    {
+      "name": "forgot_password_label",
+      "value": "忘记密码？"
+    },
+    {
+      "name": "group_info_title",
+      "value": "群组信息"
+    },
+    {
+      "name": "have_account",
+      "value": "已有账号？"
+    },
+    {
+      "name": "invite_links_label",
+      "value": "邀请链接"
+    },
+    {
+      "name": "last_name_placeholder",
+      "value": "姓氏"
+    },
+    {
+      "name": "load_failed",
+      "value": "加载失败"
+    },
+    {
+      "name": "load_failed_retry",
+      "value": "加载失败，请重试"
+    },
+    {
+      "name": "loading",
+      "value": "加载中..."
+    },
+    {
+      "name": "log_level_debug",
+      "value": "调试"
+    },
+    {
+      "name": "log_level_error",
+      "value": "错误"
+    },
+    {
+      "name": "log_level_info",
+      "value": "信息"
+    },
+    {
+      "name": "log_level_label",
+      "value": "日志级别"
+    },
+    {
+      "name": "log_level_warn",
+      "value": "警告"
+    },
+    {
+      "name": "low_data_mode_desc",
+      "value": "降低视频和图像质量"
+    },
+    {
+      "name": "low_data_mode_label",
+      "value": "低数据模式"
+    },
+    {
+      "name": "max_cache_label",
+      "value": "最大缓存大小"
+    },
+    {
+      "name": "max_disk_cache",
+      "value": "磁盘缓存上限"
+    },
+    {
+      "name": "max_memory_cache",
+      "value": "内存缓存上限"
+    },
+    {
+      "name": "muted",
+      "value": "已静音"
+    },
+    {
+      "name": "name_label",
+      "value": "姓名"
+    },
+    {
+      "name": "network_timeout_label",
+      "value": "网络超时"
+    },
+    {
+      "name": "no_matching_contacts",
+      "value": "无匹配的联系人"
+    },
+    {
+      "name": "no_mutual_groups",
+      "value": "暂无共同群组"
+    },
+    {
+      "name": "no_reactions_yet",
+      "value": "暂无互动"
+    },
+    {
+      "name": "no_replies_yet",
+      "value": "暂无回复"
+    },
+    {
+      "name": "no_stories_yet",
+      "value": "暂无故事"
+    },
+    {
+      "name": "normal_group_type",
+      "value": "普通群组"
+    },
+    {
+      "name": "password_hint_label",
+      "value": "密码提示"
+    },
+    {
+      "name": "password_incorrect_error",
+      "value": "密码错误"
+    },
+    {
+      "name": "permissions_label",
+      "value": "权限"
+    },
+    {
+      "name": "pin",
+      "value": "置顶"
+    },
+    {
+      "name": "pinned",
+      "value": "已置顶"
+    },
+    {
+      "name": "preload_cache_button",
+      "value": "预加载缓存"
+    },
+    {
+      "name": "preload_failed_retry",
+      "value": "预加载失败，请重试"
+    },
+    {
+      "name": "privacy_contacts_only",
+      "value": "仅联系人"
+    },
+    {
+      "name": "privacy_everyone",
+      "value": "所有人"
+    },
+    {
+      "name": "privacy_who_can_view",
+      "value": "谁可以查看"
+    },
+    {
+      "name": "proxy_settings_label",
+      "value": "代理设置"
+    },
+    {
+      "name": "publish_button",
+      "value": "发布"
+    },
+    {
+      "name": "recovery_code_invalid_error",
+      "value": "恢复码无效"
+    },
+    {
+      "name": "recovery_code_sent_hint",
+      "value": "恢复码已发送"
+    },
+    {
+      "name": "reply_input_placeholder",
+      "value": "回复..."
+    },
+    {
+      "name": "reply_success",
+      "value": "回复成功"
+    },
+    {
+      "name": "request_recovery_failed_toast",
+      "value": "请求恢复码失败"
+    },
+    {
+      "name": "reset_button",
+      "value": "重置"
+    },
+    {
+      "name": "reset_failed_retry",
+      "value": "重置失败，请重试"
+    },
+    {
+      "name": "reset_settings_button",
+      "value": "重置设置"
+    },
+    {
+      "name": "save_failed",
+      "value": "保存失败"
+    },
+    {
+      "name": "search_failed_retry",
+      "value": "搜索失败，请重试"
+    },
+    {
+      "name": "search_history_cleared",
+      "value": "搜索历史已清除"
+    },
+    {
+      "name": "search_messages",
+      "value": "搜索消息"
+    },
+    {
+      "name": "select_media_first",
+      "value": "请先选择媒体文件"
+    },
+    {
+      "name": "send_failed",
+      "value": "发送失败"
+    },
+    {
+      "name": "send_first_reply",
+      "value": "发送第一条回复"
+    },
+    {
+      "name": "settings_reset",
+      "value": "设置已重置"
+    },
+    {
+      "name": "share_failed",
+      "value": "分享失败"
+    },
+    {
+      "name": "share_feature_developing",
+      "value": "分享功能开发中"
+    },
+    {
+      "name": "starting_voice_call",
+      "value": "正在发起语音通话..."
+    },
+    {
+      "name": "statistics_label",
+      "value": "统计"
+    },
+    {
+      "name": "story_duration_label",
+      "value": "故事时长"
+    },
+    {
+      "name": "story_reactions_title",
+      "value": "故事互动"
+    },
+    {
+      "name": "story_replies_title",
+      "value": "故事回复"
+    },
+    {
+      "name": "supergroup_type",
+      "value": "超级群组"
+    },
+    {
+      "name": "time_just_now",
+      "value": "刚刚"
+    },
+    {
+      "name": "total_cache_size",
+      "value": "总缓存大小"
+    },
+    {
+      "name": "try_other_keywords_or_add",
+      "value": "尝试其他关键词或添加"
+    },
+    {
+      "name": "unblocked_success",
+      "value": "已解除屏蔽"
+    },
+    {
+      "name": "unmuted",
+      "value": "已取消静音"
+    },
+    {
+      "name": "unread",
+      "value": "未读"
+    },
+    {
+      "name": "use_recovery_code_button",
+      "value": "使用恢复码"
+    },
+    {
+      "name": "user_blocked",
+      "value": "用户已屏蔽"
+    },
+    {
+      "name": "verify_button",
+      "value": "验证"
+    },
+    {
+      "name": "verify_recovery_code_failed_toast",
+      "value": "验证恢复码失败"
+    },
+    {
+      "name": "verifying_text",
+      "value": "验证中..."
+    },
+    {
+      "name": "terms_summary",
+      "value": "注册即表示您同意 Telegram 的服务条款和隐私政策"
+    },
+    {
+      "name": "auth_code_hash_empty",
+      "value": "验证码会话已过期，请重新获取"
+    },
+    {
+      "name": "auth_firstname_invalid",
+      "value": "名字格式不正确，请检查"
+    },
+    {
+      "name": "auth_lastname_invalid",
+      "value": "姓氏格式不正确，请检查"
+    },
+    {
+      "name": "auth_username_invalid",
+      "value": "用户名格式不正确（5-32个字符，仅允许字母、数字和下划线）"
+    },
+    {
+      "name": "auth_username_occupied",
+      "value": "该用户名已被占用，请尝试其他用户名"
+    },
+    {
+      "name": "auth_password_empty",
+      "value": "请输入密码"
+    },
+    {
+      "name": "auth_password_required",
+      "value": "需要输入两步验证密码"
+    },
+    {
+      "name": "auth_recovery_code_failed",
+      "value": "恢复码验证失败，请重试"
+    },
+    {
+      "name": "auth_session_password_needed",
+      "value": "此会话需要两步验证密码"
+    },
+    {
+      "name": "auth_database_error",
+      "value": "数据库错误，请清除应用数据后重试"
+    },
+    {
+      "name": "edited",
+      "value": "已编辑"
+    },
+    {
+      "name": "forward_from",
+      "value": "转发来自"
+    },
+    {
+      "name": "unknown",
+      "value": "未知"
+    },
+    {
+      "name": "reply_to_message",
+      "value": "回复消息"
+    },
+    {
+      "name": "unsupported_message_type",
+      "value": "不支持的消息类型"
+    },
+    {
+      "name": "video_play_coming",
+      "value": "视频播放功能开发中"
+    },
+    {
+      "name": "file_open_coming",
+      "value": "文件打开功能开发中"
+    },
+    {
+      "name": "voice_play_coming",
+      "value": "语音播放功能开发中"
+    },
+    {
+      "name": "map_coming",
+      "value": "地图功能开发中"
+    },
+    {
+      "name": "missed_call",
+      "value": "未接来电"
+    },
+    {
+      "name": "total_votes",
+      "value": "总投票数"
+    },
+    {
+      "name": "video_call",
+      "value": "视频通话"
+    },
+    {
+      "name": "voice_call",
+      "value": "语音通话"
+    },
+    {
+      "name": "voice_message",
+      "value": "语音消息"
+    },
+    {
+      "name": "add_contact",
+      "value": "添加联系人"
+    },
+    {
+      "name": "duration",
+      "value": "时长"
+    },
+    {
+      "name": "location",
+      "value": "位置"
+    },
+    {
+      "name": "contact",
+      "value": "联系人"
+    }
+  ]
+}

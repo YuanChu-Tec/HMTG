@@ -1,0 +1,5 @@
+-keep public class com.cache.CacheStorage { public *; }
+-keep public class com.cache.model.* { public *; }
+
+# 保持MMKV相关类
+-keep class com.tencent.mmkv.** { *; }

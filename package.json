@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "pinyin4js": "^1.3.18"
+  }
+}

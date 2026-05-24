@@ -1,0 +1,85 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\28483\\.ohos\\config\\default_HMTG_VyUYYQWjX-nRrw6bdUuYR9iz3GPknsv9L7Yda96_wlU=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B95751E0BB3845D209CA7BB965B556CBBDC1F1898EF48979282BD32909876927CD9F4CE0367E119",
+          "profile": "C:\\Users\\28483\\.ohos\\config\\default_HMTG_VyUYYQWjX-nRrw6bdUuYR9iz3GPknsv9L7Yda96_wlU=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\28483\\.ohos\\config\\default_HMTG_VyUYYQWjX-nRrw6bdUuYR9iz3GPknsv9L7Yda96_wlU=.p12",
+          "storePassword": "0000001B98B6D5767CCD25DE708039B3E91EA7BE783A8B1CEC5F9A95DFEE678D3BC2E5286FF9DF3B625580"
+        }
+      },
+      {
+        "name": "putup",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "E:/HW/Dev/key/HMTG.cer",
+          "keyAlias": "keystore",
+          "keyPassword": "0000001D26EFDC52A30728E6C7CD83509D9C8BA89FEA717C254D6A7E72233DC7AA2F9D76AF7E68752B237F3F6A",
+          "profile": "E:/HW/Dev/key/HMTGaRelease.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "E:/HW/Dev/key/YuanChuTechnique.p12",
+          "storePassword": "0000001DD93D2FF7F6684007727824F7B9003B8744A282A5596A8E615022E2EB8A2D3E2361C4FA8AEFE1BFBF91"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "6.1.0(23)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "nativeCompiler": "BiSheng",
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ],
+    "capabilities": [
+      {
+        "bundleName": "com.YuanChu.HMTG",
+        "config": [
+          {
+            "capability": "com.huawei.service.push.base_service",
+            "name": "Push Kit"
+          }
+        ]
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "storage_cache",
+      "srcPath": "./storage_cache",
+    }
+  ]
+}

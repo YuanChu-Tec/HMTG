@@ -1,0 +1,6 @@
+{
+  "name": "libhome.so",
+  "types": "./Index.d.ts",
+  "version": "1.0.0",
+  "description": "TDLib NAPI binding library for HarmonyOS"
+}

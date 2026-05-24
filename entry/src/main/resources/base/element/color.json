@@ -1,0 +1,120 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "channel_primary",
+      "value": "#007AFF"
+    },
+    {
+      "name": "channel_secondary",
+      "value": "#5AC8FA"
+    },
+    {
+      "name": "channel_danger",
+      "value": "#FF3B30"
+    },
+    {
+      "name": "channel_success",
+      "value": "#34C759"
+    },
+    {
+      "name": "channel_warning",
+      "value": "#FF9500"
+    },
+    {
+      "name": "channel_text_primary",
+      "value": "#000000"
+    },
+    {
+      "name": "channel_text_secondary",
+      "value": "#8E8E93"
+    },
+    {
+      "name": "channel_text_hint",
+      "value": "#C7C7CC"
+    },
+    {
+      "name": "channel_background",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "channel_card_bg",
+      "value": "#F2F2F7"
+    },
+    {
+      "name": "channel_card_border",
+      "value": "#E5E5EA"
+    },
+    {
+      "name": "channel_verified_badge",
+      "value": "#007AFF"
+    },
+    {
+      "name": "channel_scam_badge",
+      "value": "#FF3B30"
+    },
+    {
+      "name": "channel_online_indicator",
+      "value": "#34C759"
+    },
+    {
+      "name": "channel_offline_indicator",
+      "value": "#8E8E93"
+    },
+    {
+      "name": "channel_divider",
+      "value": "#C6C6C8"
+    },
+    {
+      "name": "channel_placeholder",
+      "value": "#E5E5EA"
+    },
+    {
+      "name": "channel_selected_bg",
+      "value": "#007AFF"
+    },
+    {
+      "name": "channel_selected_text",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "channel_shadow",
+      "value": "#1A000000"
+    },
+    {
+      "name": "background",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "text_primary",
+      "value": "#000000"
+    },
+    {
+      "name": "text_secondary",
+      "value": "#8E8E93"
+    },
+    {
+      "name": "text_tertiary",
+      "value": "#C7C7CC"
+    },
+    {
+      "name": "card_background",
+      "value": "#F2F2F7"
+    },
+    {
+      "name": "accent",
+      "value": "#007AFF"
+    },
+    {
+      "name": "input_background",
+      "value": "#F2F2F7"
+    },
+    {
+      "name": "call_speaking_indicator",
+      "value": "#4CAF50"
+    }
+  ]
+}

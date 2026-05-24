@@ -1,0 +1,16 @@
+{
+  "module": {
+    "name": "storage_cache_test",
+    "type": "feature",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1",
+      "car",
+      "wearable",
+      "tv"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false
+  }
+}
