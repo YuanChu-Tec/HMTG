@@ -44,7 +44,7 @@
 
 ### 鸣谢(按ASCII排序)
 
-[![Contributiors](assets/contributers.svg)](https://github.com/Zitann/HarmonyOS-Haps/tree/main?tab=contributing-ov-file#)
+[暂无]
 
 ### Star History
 
@@ -52,12 +52,4 @@
 
 <!-- links -->
 
-[your-project-path]:Zitann/HarmonyOS-Haps
-[contributors-shield]: https://img.shields.io/github/contributors/Zitann/HarmonyOS-Haps.svg?style=flat-square
-[contributors-url]: https://github.com/Zitann/HarmonyOS-Haps/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Zitann/HarmonyOS-Haps.svg?style=flat-square
-[forks-url]: https://github.com/Zitann/HarmonyOS-Haps/network/members
-[stars-shield]: https://img.shields.io/github/stars/Zitann/HarmonyOS-Haps.svg?style=flat-square
-[stars-url]: https://github.com/Zitann/HarmonyOS-Haps/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Zitann/HarmonyOS-Haps.svg?style=flat-square
-[issues-url]: https://img.shields.io/github/issues/Zitann/HarmonyOS-Haps.svg
+[your-project-path]:YuanChu-Tec/HMTG
