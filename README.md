@@ -43,7 +43,7 @@ entry  主目录
   src/main/
     cpp/types/thirdparty  第三方库
     ets/servises  底层服务
-      api/TDLibApi  封装好的TDLib api
+      api/TDLibApi  封装好的TDLib api，理论上以具备完整的与telegram服务器通讯的能力
       business/  业务逻辑
       core/  TDLib服务
     ets/page  所有页面，以最新版tg分为一级页面，二级页面等
