@@ -8,7 +8,7 @@
 
   <h3 align="center">HMTG</h3>
   <p align="center">
-    欢迎来到HMTG仓库！HMTG是基于TDLib设计的，Telegram for HarmonyOS，旨在为鸿蒙系统提供本地适配的Telegram体验。
+    欢迎来到HMTG仓库！HMTG是基于TDLib设计的Telegram for HarmonyOS，旨在为鸿蒙系统提供本地且适配的Telegram体验。
   </p>
 
 </p>
@@ -17,6 +17,8 @@
 
 ### 目录
 - [声明](#声明)
+- [作者的话](#作者的话)
+- [项目简介](#项目简介)
 - [安装工具](#安装工具)
 - [反馈](#反馈)
 - [鸣谢(不分先后)](#鸣谢不分先后)
@@ -25,6 +27,28 @@
 ### 声明
 
 本仓库的所有内容仅供学习交流使用。如果您认为该内容侵犯了您的权益，请在 issue 中与我们联系，我们将立即删除相关内容。
+
+### 作者的话
+
+本人只是一个业余玩家，空闲时做些自己喜欢做的事，该项目是边学习边制作的（大量借助AI IDE），所以质量欠佳，希望能有大佬协助创作，遂开源。
+以下是相关聊天群：
+https://t.me/HMTGchannel
+https://t.me/HMTGchat
+qq群：1075753335
+
+### 项目简介
+
+该项目基于通过CMake为HarmonyOS编译的TDLib，以下为基本结构
+entry  主目录
+  src/main/
+    cpp/types/thirdparty  第三方库
+    ets/servises  底层服务
+      api/TDLibApi  封装好的TDLib api
+      business/  业务逻辑
+      core/  TDLib服务
+    ets/page  所有页面，以最新版tg分为一级页面，二级页面等
+  ......
+storage_chche  数据库模块
 
 ### 安装工具
 
