@@ -39,15 +39,25 @@ qq群：1075753335
 ### 项目简介
 
 该项目基于通过CMake为HarmonyOS编译的TDLib，以下为基本结构
-entry  主目录
-  src/main/
+
+    entry  主目录
+
+    src/main/
+  
     cpp/types/thirdparty  第三方库
+    
     ets/servises  底层服务
+    
       api/TDLibApi  封装好的TDLib api，理论上以具备完整的与telegram服务器通讯的能力
+      
       business/  业务逻辑
+      
       core/  TDLib服务
+      
     ets/page  所有页面，以最新版tg分为一级页面，二级页面等
+    
   ......
+  
 storage_chche  数据库模块
 
 ### 安装工具
