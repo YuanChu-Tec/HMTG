@@ -21,6 +21,8 @@ const DOMAIN = 0x0001;
 /** TDLib 认证状态事件数据 */
 interface AuthStateEventData {
   state: string;
+  /** 完整的认证状态对象（包含 link 等字段） */
+  authState?: Record<string, Object>;
 }
 
 /** TDLib 需要验证码事件数据 */
@@ -1078,7 +1080,7 @@ export class TDLibReceiver {
       hilog.info(DOMAIN, TAG, `🔐 Authorization state changed to: ${authStateType}`);
 
       // 触发认证状态机处理 - 发送全局事件
-      const authData: AuthStateEventData = { state: authStateType };
+      const authData: AuthStateEventData = { state: authStateType, authState: authState };
       emitter.emit('tdlib_auth_state', { data: authData });
 
       // 【修复】当授权完成时，发布 tdlib.auth.completed 事件通知 CoreService 重试同步

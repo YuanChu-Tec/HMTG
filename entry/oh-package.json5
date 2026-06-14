@@ -8,6 +8,7 @@
   "dependencies": {
     "libhome.so": "file:./src/main/cpp/types/libhome",
     "@ohos/lottie-turbo": "^1.0.0",
-    "@storage/cache": "file:../storage_cache"
+    "@storage/cache": "file:../storage_cache",
+    "@ohos/zxing": "^2.0.0"
   }
 }

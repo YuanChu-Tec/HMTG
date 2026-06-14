@@ -124,10 +124,11 @@ export struct DonatePage {
   BuildHeader() {
     Row() {
       Button({ type: ButtonType.Circle }) {
-        Image($r('app.media.chevron_back'))
+        Text('←')
           .width(24)
           .height(24)
-          .fillColor('#333333')
+          .fontSize(24)
+          .fontColor('#333333')
       }
       .width(40)
       .height(40)

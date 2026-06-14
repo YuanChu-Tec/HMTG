@@ -594,6 +594,18 @@ export class TDLibApi {
   }
 
   /**
+   * 导入 Bot 授权（登录 Bot 账号）
+   * @param bot_auth_token Bot Token
+   */
+  importBotAuthorization(bot_auth_token: string): Promise<Record<string, Object>> {
+    const params: Record<string, Object> = {
+      '@type': 'importBotAuthorization',
+      'bot_auth_token': bot_auth_token,
+    };
+    return this.client.execute<Record<string, Object>>(params);
+  }
+
+  /**
    * 获取 Passkey 认证参数（返回 JSON 字符串）
    */
   getAuthenticationPasskeyParameters(): Promise<string> {

@@ -133,17 +133,17 @@ export struct ContactListPage {
         .fontColor('#000000')
         .layoutWeight(1)
 
-      Image($r('app.media.ic_search'))
+      Text('🔍')
         .width(24)
         .height(24)
-        .fillColor('#007AFF')
+        .fontSize(20)
         .margin({ right: 16 })
         .onClick(() => this.openSearchPage())
 
-      Image($r('app.media.ic_menu'))
+      SymbolGlyph($r('sys.symbol.more'))
         .width(24)
         .height(24)
-        .fillColor('#007AFF')
+        .fontColor(['#007AFF'])
         .onClick(() => this.showMenu())
     }
     .width('100%')
@@ -216,7 +216,7 @@ export struct ContactListPage {
       .justifyContent(FlexAlign.Center)
     } else if (this.contactItems.length === 0) {
       Column() {
-        Image($r('app.media.ic_none_message')).width(100).height(100).opacity(0.3)
+        Text('👥').fontSize(60).opacity(0.3)
         Text('暂无联系人').fontSize(16).fontColor('#8E8E93').margin({ top: 16 })
         Text('点击右上角"添加联系人"开始').fontSize(14).fontColor('#C7C7CC').margin({ top: 8 })
       }

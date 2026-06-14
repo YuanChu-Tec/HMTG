@@ -18,10 +18,11 @@ export struct SearchBar {
   build() {
     Row() {
       // 搜索图标
-      Image($r('app.media.ic_search'))
+      Text('🔍')
         .width(20)
         .height(20)
-        .fillColor('#999999')
+        .fontSize(16)
+        .fontColor('#999999')
         .margin({ right: 8 })
 
       // 输入框
@@ -41,10 +42,11 @@ export struct SearchBar {
 
       // 清除按钮
       if (this.searchValue.length > 0) {
-        Image($r('app.media.ic_close'))
+        Text('✕')
           .width(20)
           .height(20)
-          .fillColor('#999999')
+          .fontSize(16)
+          .fontColor('#999999')
           .margin({ left: 8 })
           .onClick(() => {
             this.searchValue = '';

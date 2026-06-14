@@ -400,10 +400,11 @@ export struct ContactSearchPage {
   @Builder
   private buildEmptyState() {
     Column({ space: 16 }) {
-      Image($r('app.media.ic_search'))
+      Text('🔍')
         .width(64)
         .height(64)
-        .fillColor('#CCCCCC');
+        .fontSize(40)
+        .fontColor('#CCCCCC');
 
       Text($r('app.string.no_matching_contacts'))
         .fontSize(16)

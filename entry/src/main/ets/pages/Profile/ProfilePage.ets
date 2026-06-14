@@ -105,7 +105,7 @@ export struct ProfilePage {
       .onClick(() => this.editInfoPlaceholder())
 
       Column() {
-        this.buildActionButton('设置', $r('app.media.ic_settings'), () => this.openSettings())
+        this.buildActionButton('设置', '⚙️', () => this.openSettings())
       }
       .layoutWeight(1)
       .padding({ top: 12, bottom: 12 })
@@ -117,13 +117,21 @@ export struct ProfilePage {
   }
 
   @Builder
-  private buildActionButton(title: string, icon: ResourceStr, onClick: () => void) {
+  private buildActionButton(title: string, icon: ResourceStr | string, onClick: () => void) {
     Column() {
-      Image(icon)
-        .width(24)
-        .height(24)
-        .fillColor('#007AFF')
-        .margin({ bottom: 6 })
+      if (typeof icon === 'string' && icon.length === 1) {
+        Text(icon)
+          .width(24)
+          .height(24)
+          .fontSize(20)
+          .margin({ bottom: 6 })
+      } else {
+        Image(icon as ResourceStr)
+          .width(24)
+          .height(24)
+          .fillColor('#007AFF')
+          .margin({ bottom: 6 })
+      }
       Text(title)
         .fontSize(12)
         .fontColor('#8E8E93')
@@ -241,9 +249,11 @@ export struct ProfilePage {
   @Builder
   private buildStoryContent(type: string) {
     Column() {
-      Image($r('app.media.ic_none_message'))
+      Text('📝')
         .width(80)
         .height(80)
+        .fontSize(50)
+        .opacity(0.3)
         .margin({ top: 60, bottom: 16 })
       Text('暂无贴文')
         .fontSize(16)

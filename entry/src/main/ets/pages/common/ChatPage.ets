@@ -275,18 +275,18 @@ export struct ChatPage {
       .layoutWeight(1)
 
       if (this.viewModel.chatType !== ChatType.CHANNEL && this.viewModel.chatType !== ChatType.BOT) {
-        Image($r('app.media.icon_voice_call'))
+        SymbolGlyph($r('sys.symbol.phone'))
           .width(24)
           .height(24)
-          .fillColor('#007AFF')
+          .fontColor(['#007AFF'])
           .margin({ right: 16 })
           .onClick(() => this.startCall())
       }
 
-      Image($r('app.media.ic_menu'))
+      SymbolGlyph($r('sys.symbol.more'))
         .width(24)
         .height(24)
-        .fillColor('#007AFF')
+        .fontColor(['#007AFF'])
         .onClick(() => router.pushUrl({ url: 'pages/ChatInfoPage', params: { chatId: this.viewModel.chatId } }))
     }
     .width('100%')
@@ -495,10 +495,10 @@ export struct ChatPage {
               .padding({ left: 16, right: 16 })
               .onClick(() => this.viewModel.sendTextMessage())
           } else if (this.viewModel.chatType !== ChatType.CHANNEL && this.viewModel.canSendMessages) {
-            Image($r('app.media.icon_mic'))
+            SymbolGlyph($r('sys.symbol.mic'))
               .width(24)
               .height(24)
-              .fillColor('#007AFF')
+              .fontColor(['#007AFF'])
               .onClick(() => this.viewModel.startRecording())
           }
         }
@@ -538,7 +538,7 @@ export struct ChatPage {
       .justifyContent(FlexAlign.Center)
     } else if (this.viewModel.messageDataSource.totalCount() === 0) {
       Column() {
-        Image($r('app.media.ic_none_message')).width(100).height(100).opacity(0.3)
+        SymbolGlyph($r('sys.symbol.message')).width(100).height(100).fontColor(['#C7C7CC']).opacity(0.3)
         Text($r('app.string.no_messages_yet')).fontSize(14).fontColor('#C7C7CC').margin({ top: 12 })
       }
       .layoutWeight(1)
@@ -1559,12 +1559,13 @@ export struct ChatPage {
   private renderImageMessage(message: Message, isLeft: boolean) {
     Column() {
       Stack() {
-        Image(message.file?.path || message.media?.thumbnail || $r('app.media.default_avatar'))
+        Image(message.file?.path || message.media?.thumbnail)
           .width(200)
           .height(200)
           .objectFit(ImageFit.Cover)
           .borderRadius(12)
           .blur(message.media?.hasSpoiler ? 20 : 0)
+          .backgroundColor('#E0E0E0')
 
         // 剧透遮罩层
         if (message.media?.hasSpoiler) {
@@ -1619,12 +1620,13 @@ export struct ChatPage {
   private renderVideoMessage(message: Message, isLeft: boolean) {
     Column() {
       Stack() {
-        Image(message.file?.path || message.media?.thumbnail || $r('app.media.default_avatar'))
+        Image(message.file?.path || message.media?.thumbnail)
           .width(200)
           .height(200)
           .objectFit(ImageFit.Cover)
           .borderRadius(12)
           .blur(message.media?.hasSpoiler ? 20 : 0)
+          .backgroundColor('#E0E0E0')
 
         // 播放按钮（仅在非剧透模式下显示）
         if (!message.media?.hasSpoiler) {
@@ -1769,10 +1771,11 @@ export struct ChatPage {
   @Builder
   private renderStickerMessage(message: Message, isLeft: boolean) {
     // ⭐ 贴纸消息不显示气泡背景，直接对齐
-    Image(message.file?.path || message.media?.thumbnail || $r('app.media.default_avatar'))
+    Image(message.file?.path || message.media?.thumbnail)
       .width(120)
       .height(120)
       .objectFit(ImageFit.Contain)
+      .backgroundColor('#E0E0E0')
       .onClick(() => {
         if (!message.file?.path && message.media?.tdlibFileId) {
           this.viewModel.triggerFileDownload(message.media.tdlibFileId);
@@ -1784,11 +1787,12 @@ export struct ChatPage {
   private renderGifMessage(message: Message, isLeft: boolean) {
     Column() {
       Stack() {
-        Image(message.file?.path || message.media?.thumbnail || $r('app.media.default_avatar'))
+        Image(message.file?.path || message.media?.thumbnail)
           .width(200)
           .height(200)
           .objectFit(ImageFit.Cover)
           .borderRadius(12)
+          .backgroundColor('#E0E0E0')
         Text('GIF')
           .fontSize(10)
           .fontColor('#FFFFFF')
@@ -2238,11 +2242,12 @@ export struct ChatPage {
   private renderVideoNoteMessage(message: Message, isLeft: boolean) {
     Column() {
       Stack() {
-        Image(message.file?.path || message.media?.thumbnail || $r('app.media.default_avatar'))
+        Image(message.file?.path || message.media?.thumbnail)
           .width(120)
           .height(120)
           .borderRadius(60)
           .objectFit(ImageFit.Cover)
+          .backgroundColor('#E0E0E0')
         if (!message.file?.path) {
           Text('⬇️').fontSize(24).backgroundColor('rgba(0,0,0,0.6)').borderRadius(20).padding(8)
         } else {

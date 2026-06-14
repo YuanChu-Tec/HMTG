@@ -194,29 +194,17 @@ export class RoutePaths {
   public static readonly MAIN = 'pages/MainTabContainer';
 
   // ============ Auth认证模块 ============
-  /** 欢迎页 */
-  public static readonly AUTH_WELCOME = 'pages/auth/WelcomePage';
+  /** 引导页 */
+  public static readonly AUTH_WELCOME = 'pages/WelcomePage';
 
-  /** 手机号输入页 */
-  public static readonly AUTH_PHONE_INPUT = 'pages/auth/AuthPhonePage';
-
-  /** 验证码输入页 */
-  public static readonly AUTH_CODE_VERIFICATION = 'pages/auth/AuthCodePage';
-
-  /** 密码输入页（两步验证） */
-  public static readonly AUTH_PASSWORD_INPUT = 'pages/auth/AuthPasswordPage';
+  /** 登录页（整合手机号、验证码、密码） */
+  public static readonly AUTH_LOGIN = 'pages/LoginPage';
 
   /** 二维码登录页 */
-  public static readonly AUTH_QR_CODE = 'pages/auth/AuthQrCodePage';
+  public static readonly AUTH_QR_CODE = 'pages/QrCodePage';
 
   /** Bot Token登录页 */
-  public static readonly AUTH_BOT_TOKEN = 'pages/auth/AuthBotTokenPage';
-
-  /** 注册页 */
-  public static readonly AUTH_SIGN_UP = 'pages/auth/AuthRegisterPage';
-
-  /** 密码解锁页 */
-  public static readonly AUTH_PASSCODE_UNLOCK = 'pages/auth/PasscodeUnlockPage';
+  public static readonly AUTH_BOT_TOKEN = 'pages/BotTokenPage';
 
   // ============ Chat聊天模块 ============
   /** 聊天列表页 */
@@ -226,47 +214,50 @@ export class RoutePaths {
   public static readonly CHAT_DETAIL = 'pages/common/ChatPage';
 
   /** 聊天信息页 */
-  public static readonly CHAT_INFO = 'pages/chat/ChatInfoPage';
+  public static readonly CHAT_INFO = 'pages/chat/secondpage/ChatInfoPage';
 
   /** 消息搜索页 */
-  public static readonly MESSAGE_SEARCH = 'pages/chat/MessageSearchPage';
+  public static readonly MESSAGE_SEARCH = 'pages/chat/secondpage/MessageSearchPage';
 
   /** 共享媒体页 */
-  public static readonly SHARED_MEDIA = 'pages/chat/SharedMediaPage';
+  public static readonly SHARED_MEDIA = 'pages/chat/secondpage/SharedMediaPage';
 
   /** 置顶消息页 */
-  public static readonly PINNED_MESSAGES = 'pages/chat/PinnedMessagesPage';
+  public static readonly PINNED_MESSAGES = 'pages/chat/secondpage/PinnedMessagesPage';
 
   /** 秘密聊天详情页 */
-  public static readonly SECRET_CHAT_DETAIL = 'pages/chat/SecretChatDetailPage';
+  public static readonly SECRET_CHAT_DETAIL = 'pages/chat/secondpage/SecretChatDetailPage';
+
+  /** 全局搜索页 */
+  public static readonly GLOBAL_SEARCH = 'pages/chat/secondpage/GlobalSearchPage';
 
   // ============ Contacts联系人模块 ============
   /** 联系人列表页 */
   public static readonly CONTACTS_LIST = 'pages/contacts/ContactListPage';
 
   /** 联系人详情页 */
-  public static readonly CONTACT_DETAIL = 'pages/contacts/ContactDetailPage';
+  public static readonly CONTACT_DETAIL = 'pages/contacts/secondpage/ContactDetailPage';
 
   /** 新建联系人页 */
-  public static readonly CONTACT_NEW = 'pages/contacts/NewContactPage';
+  public static readonly CONTACT_NEW = 'pages/contacts/secondpage/NewContactPage';
 
   /** 编辑联系人页 */
-  public static readonly CONTACT_EDIT = 'pages/contacts/EditContactPage';
+  public static readonly CONTACT_EDIT = 'pages/contacts/secondpage/EditContactPage';
 
   /** 联系人搜索页 */
-  public static readonly CONTACT_SEARCH = 'pages/contacts/ContactSearchPage';
+  public static readonly CONTACT_SEARCH = 'pages/contacts/secondpage/ContactSearchPage';
 
   /** 导入联系人页 */
-  public static readonly CONTACT_IMPORT = 'pages/contacts/ImportContactsPage';
+  public static readonly CONTACT_IMPORT = 'pages/contacts/secondpage/ImportContactsPage';
 
   /** 邀请好友页 */
-  public static readonly CONTACT_INVITE = 'pages/contacts/InviteFriendsPage';
+  public static readonly CONTACT_INVITE = 'pages/contacts/secondpage/InviteFriendsPage';
 
   /** 封禁用户页 */
-  public static readonly BLOCKED_USERS = 'pages/contacts/BlockedUsersPage';
+  public static readonly BLOCKED_USERS = 'pages/contacts/secondpage/BlockedUsersPage';
 
   /** 共同群组页 */
-  public static readonly MUTUAL_GROUPS = 'pages/contacts/MutualGroupsPage';
+  public static readonly MUTUAL_GROUPS = 'pages/contacts/secondpage/MutualGroupsPage';
 
   // ============ Groups群组模块 ============
   /** 群组信息页 */
@@ -432,8 +423,8 @@ export class RoutePaths {
   /** 隐私设置页(旧) */
   public static readonly SETTINGS_PRIVACY = 'pages/settings/PrivacySettingsPage';
 
-  /** 安全设置页(旧) */
-  public static readonly SETTINGS_SECURITY = 'pages/settings/SecuritySettingsPage';
+  /** 安全设置页 */
+  public static readonly SETTINGS_SECURITY = 'pages/settings/secondpage/SecuritySettingsPage';
 
   /** 聊天设置页 */
   public static readonly SETTINGS_CHAT = 'pages/settings/ChatSettingsPage';
@@ -448,13 +439,19 @@ export class RoutePaths {
   public static readonly SETTINGS_ADVANCED = 'pages/settings/AdvancedSettingsPage';
 
   /** 关于页 */
-  public static readonly SETTINGS_ABOUT = 'pages/settings/AboutPage';
+  public static readonly SETTINGS_ABOUT = 'pages/settings/secondpage/AboutPage';
 
   /** 语言选择页 */
-  public static readonly LANGUAGE_SELECT = 'pages/settings/LanguageSelectPage';
+  public static readonly LANGUAGE_SELECT = 'pages/settings/secondpage/LanguageSelectPage';
 
   /** 捐赠页 */
-  public static readonly DONATE = 'pages/settings/DonatePage';
+  public static readonly DONATE = 'pages/settings/secondpage/DonatePage';
+
+  /** 数据与存储页 */
+  public static readonly DATA_AND_STORAGE = 'pages/settings/secondpage/DataAndStorage';
+
+  /** 缓存管理页 */
+  public static readonly CACHE_MANAGEMENT = 'pages/settings/secondpage/CacheManagementPage';
 
   // ============ Stickers贴纸模块 ============
   /** 我的贴纸页 */

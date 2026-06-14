@@ -685,6 +685,142 @@
       "value": "选择国家/地区"
     },
     {
+      "name": "auth_edit_number",
+      "value": "编辑手机号码"
+    },
+    {
+      "name": "auth_qr_code",
+      "value": "二维码登录"
+    },
+    {
+      "name": "auth_qr_code_loading",
+      "value": "正在生成二维码..."
+    },
+    {
+      "name": "auth_qr_code_title",
+      "value": "登录 Telegram"
+    },
+    {
+      "name": "auth_qr_code_hint",
+      "value": "请使用其他已登录的 Telegram 应用扫描二维码"
+    },
+    {
+      "name": "auth_qr_code_error",
+      "value": "生成二维码失败，请重试"
+    },
+    {
+      "name": "auth_qr_code_retry",
+      "value": "重新生成"
+    },
+    {
+      "name": "auth_edit_number_info_line1",
+      "value": "确定要编辑号码吗？"
+    },
+    {
+      "name": "auth_edit_number_info_line2",
+      "value": "{0}"
+    },
+    {
+      "name": "auth_edit_number_info_line3",
+      "value": "如果上面的号码是正确的，请等待验证码。"
+    },
+    {
+      "name": "auth_code_title_telegram",
+      "value": "查看 Telegram 消息"
+    },
+    {
+      "name": "auth_code_title_sms",
+      "value": "输入验证码"
+    },
+    {
+      "name": "auth_code_title_phone",
+      "value": "手机验证"
+    },
+    {
+      "name": "auth_code_sent_telegram",
+      "value": "Telegram 代码已发送到您的 {0} 账户。"
+    },
+    {
+      "name": "auth_code_sent_sms",
+      "value": "验证码已发送到 {0}。"
+    },
+    {
+      "name": "auth_code_sent_call",
+      "value": "正在拨打 {0}。"
+    },
+    {
+      "name": "auth_code_sent_flash_call",
+      "value": "闪电解码已发送到 {0}。"
+    },
+    {
+      "name": "auth_code_sent_missed_call",
+      "value": "未接来电验证码将发送到 {0}。"
+    },
+    {
+      "name": "auth_code_did_not_get",
+      "value": "未收到验证码？"
+    },
+    {
+      "name": "auth_code_did_not_get_phone",
+      "value": "未收到验证码？请尝试通过电话获取。"
+    },
+    {
+      "name": "auth_code_did_not_get_sms",
+      "value": "未收到验证码？请尝试通过短信获取。"
+    },
+    {
+      "name": "auth_code_did_not_get_info_title",
+      "value": "抱歉"
+    },
+    {
+      "name": "auth_code_did_not_get_info_line1",
+      "value": "如果您没有通过短信或电话收到验证码，请检查您的蜂窝数据设置和手机号码："
+    },
+    {
+      "name": "auth_code_did_not_get_info_line2",
+      "value": "{0}"
+    },
+    {
+      "name": "auth_code_did_not_get_info_line3",
+      "value": "另外，您可尝试使用另一个号码或联系 Telegram 客服获取帮助。"
+    },
+    {
+      "name": "auth_code_did_not_get_help",
+      "value": "帮助"
+    },
+    {
+      "name": "auth_code_did_not_get_close",
+      "value": "关闭"
+    },
+    {
+      "name": "auth_code_did_not_get_edit_number",
+      "value": "修改手机号"
+    },
+    {
+      "name": "auth_code_call_available_in",
+      "value": "电话验证将在 {0} 分 {1} 秒后可用。"
+    },
+    {
+      "name": "auth_code_sms_available_in",
+      "value": "短信验证码将在 {0} 分 {1} 秒后可用。"
+    },
+    {
+      "name": "auth_code_resend_sms_available_in",
+      "value": "重新发送短信将在 {0} 分 {1} 秒后可用。"
+    },
+    {
+      "name": "auth_code_resend_sms",
+      "value": "通过短信发送验证码"
+    },
+    {
+      "name": "auth_code_request_call",
+      "value": "拨打电话告知验证码"
+    },
+    {
+      "name": "auth_code_wrong",
+      "value": "验证码错误，请重试。"
+    },
+    {
       "name": "auth_code_wait_hint",
       "value": "正在等待验证码下发方式…请稍候。"
     },
@@ -2001,6 +2137,18 @@
       "value": "保存失败，请重试"
     },
     {
+      "name": "auth_phone_subtitle",
+      "value": "请确保您能够访问此号码，我们将通过短信或 Telegram 发送验证码"
+    },
+    {
+      "name": "auth_login_with_qr",
+      "value": "使用二维码登录"
+    },
+    {
+      "name": "auth_sync_contacts",
+      "value": "同步联系人"
+    },
+    {
       "name": "enable_two_factor_hint",
       "value": "请先在 Telegram 设置中启用两步验证"
     },
@@ -3003,6 +3151,18 @@
     {
       "name": "contact",
       "value": "联系人"
+    },
+    {
+      "name": "auth_your_number",
+      "value": "您的电话号码"
+    },
+    {
+      "name": "auth_start_text",
+      "value": "请确保您能够访问此号码，我们将通过短信或 Telegram 发送验证码"
+    },
+    {
+      "name": "auth_country",
+      "value": "国家/地区"
     }
   ]
 }

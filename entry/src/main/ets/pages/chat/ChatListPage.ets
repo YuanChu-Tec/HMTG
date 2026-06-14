@@ -516,16 +516,16 @@ export struct ChatListPage {
         .fontWeight(FontWeight.Bold)
         .fontColor('#000000')
         .layoutWeight(1)
-      Image($r('app.media.ic_search'))
+      Text('🔍')
         .width(24)
         .height(24)
-        .fillColor('#007AFF')
+        .fontSize(20)
         .onClick(() => this.openSearchPage())
         .margin({ right: 16 })
-      Image($r('app.media.ic_menu'))
+      SymbolGlyph($r('sys.symbol.more'))
         .width(24)
         .height(24)
-        .fillColor('#007AFF')
+        .fontColor(['#007AFF'])
         .onClick(() => this.openNewChatMenu())
     }
     .width('100%')
@@ -804,7 +804,7 @@ export struct ChatListPage {
     } else if (this.viewModel.chatDataSource.totalCount() === 0) {
       // 空状态
       Column() {
-        Image($r('app.media.ic_none_message')).width(100).height(100).opacity(0.3)
+        SymbolGlyph($r('sys.symbol.message')).width(100).height(100).fontColor(['#C7C7CC']).opacity(0.3)
         Text(getString('no_chats')).fontSize(14).fontColor('#C7C7CC').margin({ top: 12 })
         Text(getString('start_chatting_hint')).fontSize(12).fontColor('#D1D1D6').margin({ top: 6 })
       }
@@ -889,17 +889,17 @@ export struct ChatListPage {
               .onClick(() => this.showBatchMuteOptions())
 
             // 3. 删除（使用原图标，蓝色）
-            Image($r('app.media.ic_delete'))
+            Text('🗑️')
               .width(24)
               .height(24)
-              .fillColor('#007AFF')
+              .fontSize(20)
               .onClick(() => this.confirmBatchDelete())
 
             // 4. 更多展开（使用原图标）
-            Image($r('app.media.ic_more'))
+            SymbolGlyph($r('sys.symbol.more'))
               .width(24)
               .height(24)
-              .fillColor('#007AFF')
+              .fontColor(['#007AFF'])
               .onClick(() => this.toggleMoreMenu())
           }
         }

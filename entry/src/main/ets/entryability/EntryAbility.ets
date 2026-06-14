@@ -138,6 +138,9 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(0x0001, TAG, 'EntryAbility onWindowStageCreate');
   
+    // ⭐ 获取并存储安全区高度（必须在配置窗口之后）
+    this.getAndStoreSafeAreaHeight(windowStage);
+  
     // 配置窗口属性
     this.configureWindow(windowStage);
   
@@ -153,6 +156,37 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(0x0001, TAG, 'Succeeded in loading content.');
     });
+  }
+
+  /**
+   * ⭐ 获取安全区高度并存储到 AppStorage
+   * 参考 JMComic EntryAbility 实现
+   */
+  private getAndStoreSafeAreaHeight(windowStage: window.WindowStage): void {
+    try {
+      windowStage.getMainWindow((err: BusinessError, windowClass: window.Window) => {
+        let errCode: number = err.code;
+        if (errCode) {
+          hilog.error(DOMAIN, TAG, 'Failed to obtain the main window. Cause: ' + JSON.stringify(err));
+          return;
+        }
+
+        // 获取状态栏区域高度
+        let notificationArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
+        let topHeight = px2vp(notificationArea.topRect.height);
+        AppStorage.setOrCreate('topSafeHeight', topHeight);
+
+        // 获取导航栏区域高度
+        let navigationArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
+        let bottomHeight = px2vp(navigationArea.bottomRect.height);
+        AppStorage.setOrCreate('bottomSafeHeight', bottomHeight);
+
+        hilog.info(DOMAIN, TAG, `topSafeHeight=${topHeight}, bottomSafeHeight=${bottomHeight}`);
+      });
+    } catch (error) {
+      const err = error as Error;
+      hilog.error(DOMAIN, TAG, `Failed to get safe area height: ${err.message}`);
+    }
   }
 
   /**

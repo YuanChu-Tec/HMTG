@@ -6,7 +6,7 @@ import { LogService } from '../../../utils/log/LogService';
 import { ErrorHandler } from '../../../utils/error/ErrorHandler';
 import { picker } from '@kit.CoreFileKit';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { QRCodeGenerator } from './QRCodeGenerator';
+import { QRCodeGenerator } from '../../../utils/QRCodeGenerator';
 import { image } from '@kit.ImageKit';
 import { promptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';

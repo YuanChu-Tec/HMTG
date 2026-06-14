@@ -3,10 +3,6 @@
 /oh_modules/
 **/oh_modules/
 
-# --- 库文件（过于巨大，分开上传） ---
-#/entry/src/main/cpp/types/thirdparty/tdlib/
-#/entry/src/main/cpp/types/thirdparty/webrtc/
-
 # --- 构建产物与缓存 (每次编译都会变) ---
 /build/
 /.cxx/
@@ -46,7 +42,9 @@ entry/src/main/ets/services/config/TelegramApiConfig.ets
 /.lingma/
 /.comate/
 /.codebuddy/
+/.codegenie/
 
 # 参考文件
 /reference/
 /docs/
+

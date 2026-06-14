@@ -1,5 +1,5 @@
 /**
- * 主标签容器页面 - 使用 Swiper 实现平滑滑动 + 自定义悬浮导航栏
+ * 主标签容器页面 - 使用 HdsTabs 实现悬浮导航栏
  * ⭐ 支持平板分栏模式：左侧导航+列表，右侧聊天详情
  */
 
@@ -9,6 +9,7 @@ import { EventBus } from '../utils/event/EventBus';
 import { BadgeManager } from '../utils/storage/BadgeManager';
 import { TdLibEventNames } from '../services/api';
 import { Badge } from '../ui_kit';
+import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 
 import { ChatListPage } from './chat/ChatListPage';
 import { ContactListPage } from './contacts/ContactListPage';
@@ -30,15 +31,14 @@ export enum TabType {
 interface TabItem {
   type: TabType;
   title: ResourceStr;
-  icon: ResourceStr;
-  iconSelected: ResourceStr;
+  icon: Resource;
 }
 
 const TABS: TabItem[] = [
-  { type: TabType.CHAT, title: $r('app.string.tab_chat'), icon: '💬', iconSelected: '💬' },
-  { type: TabType.CONTACTS, title: $r('app.string.tab_contacts'), icon: '👥', iconSelected: '👥' },
-  { type: TabType.SETTINGS, title: $r('app.string.tab_settings'), icon: '⚙️', iconSelected: '⚙️' },
-  { type: TabType.PROFILE, title: $r('app.string.tab_profile'), icon: '👤', iconSelected: '👤' }
+  { type: TabType.CHAT, title: $r('app.string.tab_chat'), icon: $r('sys.symbol.message') },
+  { type: TabType.CONTACTS, title: $r('app.string.tab_contacts'), icon: $r('sys.symbol.person_2') },
+  { type: TabType.SETTINGS, title: $r('app.string.tab_settings'), icon: $r('sys.symbol.gearshape') },
+  { type: TabType.PROFILE, title: $r('app.string.tab_profile'), icon: $r('sys.symbol.person') }
 ];
 
 @Entry({ routeName: 'MainTabContainer' })
@@ -57,7 +57,7 @@ export struct MainTabContainer {
   @Local selectedChatTitle: string = '';
   @Local selectedChatAvatar: string = '';
 
-  private swiperController: SwiperController = new SwiperController();
+  private controller: HdsTabsController = new HdsTabsController();
   private messageReceivedListener: ((data?: Object) => void) | null = null;
   private authCompletedListener: ((data?: Object) => void) | null = null;
   private messageReadListener: ((data?: Object) => void) | null = null;
@@ -148,45 +148,26 @@ export struct MainTabContainer {
   }
 
   @Builder
-  private customTabBar() {
-    Row() {
-      ForEach(TABS, (tab: TabItem, index: number) => {
-        Stack() {
-          Column() {
-            Text(this.currentIndex === index ? tab.iconSelected : tab.icon)
-              .fontSize(24)
-            Text(tab.title)
-              .fontSize(12)
-              .fontColor(this.currentIndex === index ? '#007AFF' : '#8E8E93')
-              .margin({ top: 4 })
-          }
-          .width(64)
-          .height(56)
-          .borderRadius(28)
-          .backgroundColor(this.currentIndex === index ? '#E8F4FF' : Color.Transparent)
-          .justifyContent(FlexAlign.Center)
+  private TabBarBuilder(icon: Resource, label: ResourceStr, index: number, badgeCount: number) {
+    Stack({ alignContent: Alignment.TopEnd }) {
+      Column() {
+        SymbolGlyph(icon)
+          .fontSize(24)
+          .fontColor([this.currentIndex === index ? '#007AFF' : '#8E8E93'])
+        Text(label)
+          .fontSize(10)
+          .fontColor(this.currentIndex === index ? '#007AFF' : '#8E8E93')
+          .margin({ top: 2 })
+      }
+      .padding({ top: 8, bottom: 4 })
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
-          if (this.getBadge(tab.type) > 0) {
-            Badge({ count: this.getBadge(tab.type), maxCount: 99, type: 'danger' })
-              .position({ x: 44, y: 0 })
-          }
-        }
-        .width(64)
-        .height(64)
-        .onClick(() => {
-          if (this.currentIndex !== index) {
-            this.swiperController.changeIndex(index, true);
-          }
-        })
-      }, (item: TabItem) => item.type)
+      if (badgeCount > 0) {
+        Badge({ count: badgeCount, maxCount: 99, type: 'danger' })
+          .position({ x: 16, y: 0 })
+      }
     }
-    .width('90%')
-    .height(64)
-    .backgroundColor('#FFFFFF')
-    .borderRadius(32)
-    .shadow({ radius: 16, color: 'rgba(0, 0, 0, 0.15)', offsetY: 4 })
-    .margin({ bottom: 24 })
-    .justifyContent(FlexAlign.SpaceEvenly)
   }
 
   build() {
@@ -194,7 +175,7 @@ export struct MainTabContainer {
       // ⭐ 平板模式：左右分栏
       this.buildTabletLayout()
     } else {
-      // 手机模式：底部导航 + Swiper
+      // 手机模式：底部导航 + HdsTabs
       this.buildPhoneLayout()
     }
   }
@@ -210,28 +191,48 @@ export struct MainTabContainer {
         // ⭐ API 24: 新增动态布局容器，可响应式调整子组件排列
         GridRow() {
           GridCol({ span: 24 }) {
-            Swiper(this.swiperController) {
-              ChatListPage({
-                onChatSelected: (chatId: number, chatType: ChatType, title: string, avatar: string) => {
-                  hilog.info(DOMAIN, TAG, `⭐ Received callback from ChatListPage: id=${chatId}, title=${title}`);
-                  this.selectedChatId = chatId;
-                  this.selectedChatType = chatType;
-                  this.selectedChatTitle = title;
-                  this.selectedChatAvatar = avatar;
-                }
-              })
-              ContactListPage({})
-              SettingsPage({})
-              ProfilePage({})
+            HdsTabs({ controller: this.controller, index: this.currentIndex }) {
+              // 聊天列表
+              TabContent() {
+                ChatListPage({
+                  onChatSelected: (chatId: number, chatType: ChatType, title: string, avatar: string) => {
+                    hilog.info(DOMAIN, TAG, `⭐ Received callback from ChatListPage: id=${chatId}, title=${title}`);
+                    this.selectedChatId = chatId;
+                    this.selectedChatType = chatType;
+                    this.selectedChatTitle = title;
+                    this.selectedChatAvatar = avatar;
+                  }
+                })
+              }
+              .tabBar(this.TabBarBuilder(TABS[0].icon, TABS[0].title, 0, this.getBadge(TABS[0].type)))
+
+              // 联系人列表
+              TabContent() {
+                ContactListPage({})
+              }
+              .tabBar(this.TabBarBuilder(TABS[1].icon, TABS[1].title, 1, this.getBadge(TABS[1].type)))
+
+              // 设置页面
+              TabContent() {
+                SettingsPage({})
+              }
+              .tabBar(this.TabBarBuilder(TABS[2].icon, TABS[2].title, 2, this.getBadge(TABS[2].type)))
+
+              // 个人页面
+              TabContent() {
+                ProfilePage({})
+              }
+              .tabBar(this.TabBarBuilder(TABS[3].icon, TABS[3].title, 3, this.getBadge(TABS[3].type)))
             }
+            .barPosition(BarPosition.End)
+            .barOverlap(true)
+            .barFloatingStyle({
+              barBottomMargin: 16
+            })
+            .animationDuration(300)
+            .scrollable(true)
             .width('100%')
             .height('100%')
-            .loop(false)
-            .indicator(false)
-            .index(this.currentIndex)
-            .cachedCount(2)
-            .duration(150)
-            .curve('ease-out')
             .onChange((index: number) => {
               this.currentIndex = index;
               // 切换标签时清空右侧选中状态
@@ -241,8 +242,6 @@ export struct MainTabContainer {
             })
           }
         }
-
-        this.customTabBar()
       }
       .width(360)
       .height('100%')
@@ -265,9 +264,10 @@ export struct MainTabContainer {
           .key(`chat_${this.selectedChatId}`) // ⭐ 使用 key 强制重建组件，确保切换聊天时重新初始化
         } else {
           Column() {
-            Image($r('app.media.ic_none_message'))
+            SymbolGlyph($r('sys.symbol.message'))
               .width(120)
               .height(120)
+              .fontColor(['#C7C7CC'])
               .opacity(0.3)
             Text('选择一个聊天开始对话')
               .fontSize(16)
@@ -288,30 +288,48 @@ export struct MainTabContainer {
   }
 
   /**
-   * 手机布局：底部导航 + Swiper
+   * 手机布局：底部导航 + HdsTabs
    */
   @Builder
   private buildPhoneLayout() {
     Stack({ alignContent: Alignment.Bottom }) {
-      Swiper(this.swiperController) {
-        ChatListPage({})
-        ContactListPage({})
-        SettingsPage({})
-        ProfilePage({})
+      HdsTabs({ controller: this.controller, index: this.currentIndex }) {
+        // 聊天列表
+        TabContent() {
+          ChatListPage({})
+        }
+        .tabBar(this.TabBarBuilder(TABS[0].icon, TABS[0].title, 0, this.getBadge(TABS[0].type)))
+
+        // 联系人列表
+        TabContent() {
+          ContactListPage({})
+        }
+        .tabBar(this.TabBarBuilder(TABS[1].icon, TABS[1].title, 1, this.getBadge(TABS[1].type)))
+
+        // 设置页面
+        TabContent() {
+          SettingsPage({})
+        }
+        .tabBar(this.TabBarBuilder(TABS[2].icon, TABS[2].title, 2, this.getBadge(TABS[2].type)))
+
+        // 个人页面
+        TabContent() {
+          ProfilePage({})
+        }
+        .tabBar(this.TabBarBuilder(TABS[3].icon, TABS[3].title, 3, this.getBadge(TABS[3].type)))
       }
+      .barPosition(BarPosition.End)
+      .barOverlap(true)
+      .barFloatingStyle({
+        barBottomMargin: 16
+      })
+      .animationDuration(300)
+      .scrollable(true)
       .width('100%')
       .height('100%')
-      .loop(false)
-      .indicator(false)
-      .index(this.currentIndex)
-      .cachedCount(2)
-      .duration(150)
-      .curve('ease-out')
       .onChange((index: number) => {
         this.currentIndex = index;
       })
-
-      this.customTabBar()
     }
     .width('100%')
     .height('100%')
