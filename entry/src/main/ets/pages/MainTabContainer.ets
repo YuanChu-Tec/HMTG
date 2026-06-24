@@ -9,13 +9,13 @@ import { EventBus } from '../utils/event/EventBus';
 import { BadgeManager } from '../utils/storage/BadgeManager';
 import { TdLibEventNames } from '../services/api';
 import { Badge } from '../ui_kit';
-import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
+import { HdsTabs, HdsTabsController, hdsMaterial } from '@kit.UIDesignKit';
 
-import { ChatListPage } from './chat/ChatListPage';
-import { ContactListPage } from './contacts/ContactListPage';
-import { SettingsPage } from './settings/SettingsPage';
-import { ProfilePage } from './Profile/ProfilePage';
-import { ChatPage } from './common/ChatPage';
+import { ChatListPage } from './ChatListPage';
+import { ContactListPage } from './ContactListPage';
+import { SettingsPage } from './SettingsPage';
+import { ProfilePage } from './ProfilePage';
+import { ChatPage } from './ChatPage';
 import { ChatType } from '../models/TDLibData';
 
 const DOMAIN = 0x0001;
@@ -227,7 +227,11 @@ export struct MainTabContainer {
             .barPosition(BarPosition.End)
             .barOverlap(true)
             .barFloatingStyle({
-              barBottomMargin: 16
+              barBottomMargin: 16,
+              systemMaterialEffect: {
+                materialType: hdsMaterial.MaterialType.IMMERSIVE,
+                materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+              }
             })
             .animationDuration(300)
             .scrollable(true)
@@ -321,7 +325,11 @@ export struct MainTabContainer {
       .barPosition(BarPosition.End)
       .barOverlap(true)
       .barFloatingStyle({
-        barBottomMargin: 16
+        barBottomMargin: 16,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.IMMERSIVE,
+          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+        }
       })
       .animationDuration(300)
       .scrollable(true)

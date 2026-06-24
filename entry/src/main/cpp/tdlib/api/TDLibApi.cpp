@@ -3,7 +3,7 @@
  * 每个函数：接收 (clientId, paramsJson: string) → 调用 tdlib::sendRequest
  */
 #include "TDLibApi.h"
-#include "../../utils/JsonHelper.h"   // 假设 JsonHelper 提供必要的工具
+#include "../utils/JsonHelper.h"   // 假设 JsonHelper 提供必要的工具
 
 namespace tdlib {
 namespace api {

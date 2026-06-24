@@ -258,24 +258,65 @@ export type MessageSelfDestructType = MessageSelfDestructTypeImmediately | Messa
 
 // ==================== 核心实体 ====================
 
-export interface UserStatus {
-  type: 'online' | 'offline' | 'recently' | 'lastWeek' | 'lastMonth' | 'empty';
-  expires?: number;
-  wasOnline?: number;
+// ⭐ TDLib 用户状态类型定义（与 TDLib 实际返回结构一致）
+export interface UserStatusEmpty {
+  _: 'userStatusEmpty';
 }
 
+export interface UserStatusOnline {
+  _: 'userStatusOnline';
+  expires: number;
+}
+
+export interface UserStatusOffline {
+  _: 'userStatusOffline';
+  was_online: number;
+}
+
+export interface UserStatusRecently {
+  _: 'userStatusRecently';
+  by_my_privacy_settings: boolean;
+}
+
+export interface UserStatusLastWeek {
+  _: 'userStatusLastWeek';
+  by_my_privacy_settings: boolean;
+}
+
+export interface UserStatusLastMonth {
+  _: 'userStatusLastMonth';
+  by_my_privacy_settings: boolean;
+}
+
+export type UserStatus =
+  | UserStatusEmpty
+  | UserStatusOnline
+  | UserStatusOffline
+  | UserStatusRecently
+  | UserStatusLastWeek
+  | UserStatusLastMonth;
+
+// ⭐ TDLib 用户头像类型定义（与 TDLib 实际返回结构一致）
 export interface UserProfilePhoto {
-  id: number;
-  smallFileId: number;
-  smallFileUniqueId: string;
-  bigFileId: number;
-  bigFileUniqueId: string;
+  _: 'profilePhoto';
+  id: string;
+  small: TdFile;
+  big: TdFile;
   localPath?: string;
 }
 
 export interface EmojiStatus {
   emoji: string;
   untilDate?: number;
+}
+
+// ⭐ TDLib usernames 类型定义（与 TDLib 实际返回结构一致）
+export interface Usernames {
+  _: 'usernames';
+  active_usernames: string[];
+  disabled_usernames: string[];
+  editable_username: string;
+  collectible_usernames: string[];
 }
 
 export interface User {
@@ -290,7 +331,7 @@ export interface User {
   status: UserStatus;
   profilePhoto?: UserProfilePhoto;
   emojiStatus?: EmojiStatus;
-  usernames: string[];
+  usernames?: Usernames;
   botCommands?: BotCommand[];           // 机器人命令列表
 }
 
@@ -1101,7 +1142,7 @@ export interface EmailAddress {
 export interface Contact {
   id: number;
   userId: number;
-  usernames: string[];
+  usernames?: Usernames;
   isVerified: boolean;
   isPremium: boolean;
   isBot: boolean;
@@ -1611,3 +1652,32 @@ export type ChatId = number;
 export type UserId = number;
 export type MessageId = number;
 export type FileId = number;
+
+// ==================== ⭐ Nagram 参考：更新位掩码 ====================
+// 用于批量通知 ViewModel 进行细粒度增量刷新，避免全量重绘
+// 使用方式: combinedMask = MASK_A | MASK_B, ViewModel 按位检查
+
+export const UPDATE_MASK_NEW_MESSAGE = 1;           // 新消息到达
+export const UPDATE_MASK_MESSAGE_SENT = 2;           // 消息发送成功
+export const UPDATE_MASK_MESSAGE_FAILED = 4;         // 消息发送失败
+export const UPDATE_MASK_MESSAGE_EDITED = 8;         // 消息被编辑
+export const UPDATE_MASK_MESSAGE_DELETED = 16;       // 消息被删除
+export const UPDATE_MASK_MESSAGE_STATUS = 32;        // 消息状态变更（已读/发送中）
+export const UPDATE_MASK_CHAT_ACTION = 64;           // 聊天动作（正在输入等）
+export const UPDATE_MASK_FILE_PROGRESS = 128;        // 文件下载进度
+export const UPDATE_MASK_CONNECTION = 256;           // 连接状态
+export const UPDATE_MASK_USER_AVATAR = 512;          // 用户头像变更
+export const UPDATE_MASK_NAME = 1024;                // 用户名变更
+export const UPDATE_MASK_AVATAR = 2048;              // 头像变更
+export const UPDATE_MASK_STATUS = 4096;              // 在线状态变更
+export const UPDATE_MASK_CHAT_NAME = 8192;           // 聊天名称变更
+export const UPDATE_MASK_CHAT_AVATAR = 16384;        // 聊天头像变更
+export const UPDATE_MASK_CHAT_MEMBERS = 32768;       // 群成员变更
+export const UPDATE_MASK_READ_DIALOG = 65536;        // 对话已读状态
+export const UPDATE_MASK_CHAT_LIST = 131072;         // 聊天列表变更
+
+// 组合掩码（快捷引用）
+export const UPDATE_MASK_ALL = UPDATE_MASK_NEW_MESSAGE | UPDATE_MASK_MESSAGE_SENT |
+  UPDATE_MASK_MESSAGE_FAILED | UPDATE_MASK_MESSAGE_EDITED | UPDATE_MASK_MESSAGE_DELETED |
+  UPDATE_MASK_MESSAGE_STATUS | UPDATE_MASK_CHAT_ACTION | UPDATE_MASK_FILE_PROGRESS |
+  UPDATE_MASK_CONNECTION | UPDATE_MASK_USER_AVATAR;

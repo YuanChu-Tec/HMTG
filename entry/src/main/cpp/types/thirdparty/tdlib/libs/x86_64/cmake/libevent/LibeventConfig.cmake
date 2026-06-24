@@ -146,7 +146,7 @@ if(CONFIG_FOR_INSTALL_TREE)
     endforeach()
 else()
     ## Config for build tree ----------------------------------------
-    set(LIBEVENT_INCLUDE_DIRS "E:/important/tdlib-harmony-builder/src/extracted/libevent-2.1.12-stable/include;E:/important/tdlib-harmony-builder/build/x86_64/libevent/include")
+    set(LIBEVENT_INCLUDE_DIRS "/home/yuanchu/tdlib-harmony-builder/src/extracted/libevent-2.1.12-stable/include;/home/yuanchu/tdlib-harmony-builder/build/x86_64/libevent/include")
     foreach(_comp ${_EVENT_COMPONENTS})
         list(APPEND LIBEVENT_LIBRARIES "libevent::${_comp}")
         set_case_insensitive_found(${_comp})

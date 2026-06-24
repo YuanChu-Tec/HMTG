@@ -9,19 +9,23 @@
  */
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { Message, Chat, MessageType, MessageStatus, ChatType, DraftMessage, UserStatus, MessageContent, Contact, ContactGroup, ContactListItemData, ContactSearchResult, ContactStats, OnlineStatus, SyncStatus, PhoneNumber, FileInfo, LocationInfo, ContactInfo, PollInfo, PollOption, ChatMemberStatus, ChatPermissions } from '../../models/TDLibData';
+import { Message, Chat, MessageType, MessageStatus, ChatType, DraftMessage, UserStatus, MessageContent, Contact, ContactGroup, ContactListItemData, ContactSearchResult, ContactStats, OnlineStatus, SyncStatus, PhoneNumber, FileInfo, LocationInfo, ContactInfo, PollInfo, PollOption, ChatMemberStatus, ChatPermissions, Usernames } from '../../models/TDLibData';
 import { AppLogger } from '../../utils/log/LogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { TdApiFactory } from '../api/factory/TdApiFactory';
 import { TDLibApi } from '../api/TDLibApi';
-import type { File, Messages, inputMessageText, inputMessagePhoto, formattedText, inputFileLocal, fileTypePhoto, inputThumbnail, InputFile, MessageSelfDestructType, messageSelfDestructTypeImmediately, chatListMain$Input, Chats, ChatList, Ok, User, importedContact$Input, chatNotificationSettings$Input, callProtocol, messageStory } from '../api/factory/tdlib-types';
+import type { File, Messages, inputMessageText$Input as inputMessageText, inputMessagePhoto$Input as inputMessagePhoto, formattedText, inputFileLocal$Input as inputFileLocal, fileTypePhoto, inputThumbnail$Input as inputThumbnail, InputFile$Input as InputFile, inputPhoto$Input as inputPhoto, MessageSelfDestructType, messageSelfDestructTypeImmediately, chatListMain$Input, Chats, ChatList, Ok, User, importedContact$Input, chatNotificationSettings$Input, callProtocol, messageStory } from '../api/factory/tdlib-types';
 import { EventBus } from '../../utils/event/EventBus';
 import { FileDownloadService } from './FileDownloadService';
-import { FileType, DownloadPriority } from '../../models/TDLibData';
+import { FileType, DownloadPriority, UPDATE_MASK_MESSAGE_SENT, UPDATE_MASK_MESSAGE_FAILED, UPDATE_MASK_MESSAGE_EDITED, UPDATE_MASK_MESSAGE_DELETED, UPDATE_MASK_MESSAGE_STATUS, UPDATE_MASK_CHAT_ACTION, UPDATE_MASK_FILE_PROGRESS, UPDATE_MASK_CONNECTION, UPDATE_MASK_USER_AVATAR, UPDATE_MASK_NEW_MESSAGE, UPDATE_MASK_CHAT_LIST } from '../../models/TDLibData';
 import { CacheService } from './CacheService'; // 缓存服务
 import { CacheStorage, ChatEntity, MessageEntity } from '@storage/cache'; // ⭐ storage_cache模块
 
 const eventBus = EventBus.getInstance();
+
+// ⭐ Nagram 参考：批量更新 flush 延迟（毫秒）
+// 与 Nagram 的 processUpdateArray 批处理窗口一致
+const FLUSH_DELAY_MS = 50;
 
 /**
  * UserInfo - 用户信息接口
@@ -54,6 +58,23 @@ interface ChatListMain {
   _: 'chatListMain';
 }
 
+/**
+ * ⭐ 消息处理操作类型 - Nagram 风格的消息队列
+ */
+class MessageQueueTask {
+  type: 'load' | 'append' | 'delete' | 'replace';
+  chatId: number;
+  // 回调在队列执行完毕后被调用
+  execute: () => Promise<void> | void;
+  resolve?: () => void;
+
+  constructor(type: string, chatId: number, execute: () => Promise<void> | void) {
+    this.type = type as 'load' | 'append' | 'delete' | 'replace';
+    this.chatId = chatId;
+    this.execute = execute;
+  }
+}
+
 export class CoreService {
   private static instance: CoreService;
   private chatList: Chat[] = [];
@@ -61,10 +82,28 @@ export class CoreService {
   private tdLibApi: TDLibApi;
   private userCache: Map<number, UserInfo> = new Map();
   private isInitialized: boolean = false;
-  private isLoadingChats: boolean = false; // 新增：加载屏障
-  private fileDownloadService?: FileDownloadService; // 文件下载服务（延迟初始化）
-  private cacheService: CacheService; // 缓存服务
-  private cacheStorage?: CacheStorage; // ⭐ storage_cache存储
+  private isLoadingChats: boolean = false;
+  private fileDownloadService?: FileDownloadService;
+  private cacheService: CacheService;
+  private cacheStorage?: CacheStorage;
+
+  // ==================== 消息处理队列（Nagram 风格） ====================
+  private messageQueue: MessageQueueTask[] = [];
+  private isProcessingQueue: boolean = false;
+  
+  // ⭐ Nagram 参考：批量更新累积器 (processUpdateArray 风格)
+  // 累积更新事件位掩码，批量刷新 UI，避免逐条通知造成多次重绘
+  private pendingUpdateMask: number = 0;
+  private batchFlushTimer: number = -1;
+  
+  // ==================== 用户发起的删除跟踪 ====================
+  // Nagram 参考：区分用户操作 vs TDLib 内部清理
+  private userInitiatedDeletions: Set<string> = new Set(); // key = `${chatId}_${msgId}`
+
+  // ==================== 已处理删除去重 ====================
+  private processedDeletions: Set<string> = new Set();
+  // ⭐ 已删除消息 ID 集合（用于过滤 TDLib 已删除消息）
+  private deletedMessageIds: Set<number> = new Set();
   
   // ==================== 联系人管理 ====================
   private contacts: Map<number, Contact> = new Map();
@@ -73,7 +112,7 @@ export class CoreService {
   
   // ==================== 防抖刷新管理 ====================
   private chatUpdateDebounceTimers: Map<number, number> = new Map();
-  private readonly CHAT_UPDATE_DEBOUNCE_MS = 50; // 50ms 防抖延迟（降低延迟提高响应速度）
+  private readonly CHAT_UPDATE_DEBOUNCE_MS = 50;
 
   // ==================== 认证状态管理 ====================
   private currentAuthState: string = 'authorizationStateWaitTdlibParameters';
@@ -103,6 +142,43 @@ export class CoreService {
       CoreService.instance = new CoreService(context);
     }
     return CoreService.instance;
+  }
+
+  // ==================== 消息处理队列（Nagram 风格：processLoadedMessages 顺序处理） ====================
+
+  /**
+   * ⭐ Nagram 参考：将消息操作加入队列，确保顺序处理
+   * 所有消息的 append/delete/replace 操作都通过此方法排队
+   * 避免并发操作导致的时序竞争
+   */
+  enqueueMessageTask(task: MessageQueueTask): Promise<void> {
+    return new Promise<void>((resolve) => {
+      task.resolve = resolve;
+      this.messageQueue.push(task);
+      if (!this.isProcessingQueue) {
+        this.processQueue();
+      }
+    });
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.messageQueue.length === 0) return;
+    this.isProcessingQueue = true;
+
+    while (this.messageQueue.length > 0) {
+      const task = this.messageQueue.shift();
+      if (!task) continue;
+      try {
+        await task.execute();
+      } catch (error) {
+        hilog.error(0x0001, 'CoreService',
+          `❌ MessageQueue task ${task.type} failed for chat ${task.chatId}: ${JSON.stringify(error)}`);
+      }
+      if (task.resolve) {
+        task.resolve();
+      }
+    }
+    this.isProcessingQueue = false;
   }
 
   // ==================== 初始化 ====================
@@ -192,40 +268,38 @@ export class CoreService {
 
     hilog.info(0x0001, 'CoreService', `📩 [SERVICE] Received new message for chat ${chatId}, id=${msgId}, outgoing=${isOutgoing}`);
 
-    // ⭐ 使用统一更新通道：刷新完整聊天数据
-    this.refreshChat(chatId);
-    hilog.info(0x0001, 'CoreService', `✅ [SERVICE] Refreshed chat ${chatId} via unified channel`);
-
-    // ⭐ 保存消息到数据库
+    // ⭐ Nagram 参考：先写数据库（putMessages），再更新内存（updateInterface）
+    // 数据库是唯一事实源，服务器数据必须先持久化再到内存
     if (this.cacheStorage) {
       try {
         await this.saveMessageToDatabase(messageObj, chatId);
-        hilog.info(0x0001, 'CoreService', `💾 Message ${msgId} saved to database`);
+        hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Message ${msgId} saved to database`);
       } catch (error) {
         hilog.error(0x0001, 'CoreService', `Failed to save message to database: ${JSON.stringify(error)}`);
       }
-    }
 
-    // ⭐ 持久化：更新最后消息和未读数到 CacheStorage
-    if (this.cacheStorage) {
+      // ⭐ Nagram 参考：同步更新 Chat 实体的最后消息和未读数到 DB
       const date = messageObj['date'] as number;
-
-      // 获取或创建聊天实体
-      this.cacheStorage.getChatWithCache(chatId).then(chatEntity => {
+      try {
+        const chatEntity = await this.cacheStorage.getChatWithCache(chatId);
         if (chatEntity) {
           chatEntity.lastMessageId = msgId;
           chatEntity.lastMessageDate = date;
           if (!isOutgoing) {
             chatEntity.unreadCount = (chatEntity.unreadCount || 0) + 1;
           }
-          this.cacheStorage!.updateChat(chatEntity).catch((e: Error) =>
-            hilog.warn(0x0001, 'CoreService', `Update chat in CacheStorage failed: ${e}`)
-          );
+          await this.cacheStorage.updateChat(chatEntity);
+          hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Chat ${chatId} lastMessage/readState updated in DB`);
         }
-      }).catch((e: Error) =>
-        hilog.warn(0x0001, 'CoreService', `Get chat from CacheStorage failed: ${e}`)
-      );
+      } catch (dbError) {
+        hilog.warn(0x0001, 'CoreService', `Update chat in DB failed: ${JSON.stringify(dbError)}`);
+      }
     }
+
+    // ⭐ Nagram 参考：再更新内存缓存（updateInterface）
+    // refreshChat 内部会从 TDLib 重新获取最新数据并同步到内存
+    this.refreshChat(chatId);
+    hilog.info(0x0001, 'CoreService', `✅ [SERVICE] Refreshed chat ${chatId} via unified channel`);
 
     // 触发领域事件通知 ViewModel
     const eventType = isOutgoing ? 'core:messageSent' : 'core:messageReceived';
@@ -234,6 +308,9 @@ export class CoreService {
     eventData['messageId'] = msgId as Object;
     eventData['message'] = messageObj as Object;
     eventBus.emit(eventType, eventData);
+    // ⭐ Nagram 参考：累积批量变更通知
+    const mask = isOutgoing ? UPDATE_MASK_MESSAGE_SENT : UPDATE_MASK_NEW_MESSAGE;
+    this.scheduleBatchFlush(mask);
   }
 
   /**
@@ -536,9 +613,13 @@ export class CoreService {
       const anchorMessagesResult = await this.tdLibApi.getMessages(chatId, [anchorMessageId]);
       let anchorMessage: Message | undefined = undefined;
       if (anchorMessagesResult && (anchorMessagesResult as Messages).messages?.length > 0) {
+        // ⭐ Nagram 参考：先保存锚点消息到数据库
+        const anchorTdMessages = (anchorMessagesResult as Messages).messages;
+        await this.batchSaveMessagesToDatabase(anchorTdMessages, chatId);
+
         const chat = this.getChat(chatId);
         const chatType = chat?.type || ChatType.PRIVATE;
-        const converted = await this.convertTdMessages((anchorMessagesResult as Messages).messages, chatType);
+        const converted = await this.convertTdMessages(anchorTdMessages, chatType);
         if (converted.length > 0) {
           anchorMessage = converted[0];
         }
@@ -636,9 +717,8 @@ export class CoreService {
   }
 
   public async loadHistory(chatId: number, fromMessageId?: number, limit: number = 20): Promise<Message[]> {
-    // 从 TDLib 加载消息历史
-    // 注意：fromMessageId 为 0 或 undefined 时，获取最新消息
-    // fromMessageId > 0 时，获取该消息之前的历史消息
+    // ⭐ Nagram 参考：先写入数据库，再从数据库读取返回
+    // 流程：TDLib → DB（事实源） → Memory Cache → 返回 Message[]
     try {
       hilog.info(0x0001, 'CoreService', `Loading history for chat ${chatId}, fromMessageId: ${fromMessageId || 0}, limit: ${limit}`);
 
@@ -651,31 +731,58 @@ export class CoreService {
         const tdMessages = (result as Messages).messages;
         hilog.info(0x0001, 'CoreService', `Loaded ${tdMessages.length} messages from TDLib for chat ${chatId}`);
 
-        const newMessages = await this.convertTdMessages(tdMessages, chatType);
+        // ⭐ Nagram 参考：Phase 1 - 先批量写入数据库（确保持久化）
+        const savedCount = await this.batchSaveMessagesToDatabase(tdMessages, chatId);
+        hilog.info(0x0001, 'CoreService', `Phase 1: Saved ${savedCount}/${tdMessages.length} messages to DB for chat ${chatId}`);
 
-        // ⭐ 保存消息到数据库
-        if (this.cacheStorage) {
-          for (const msg of tdMessages) {
-            try {
-              const msgRecord = JSON.parse(JSON.stringify(msg)) as Record<string, Object>;
-              await this.saveMessageToDatabase(msgRecord, chatId);
-            } catch (saveError) {
-              hilog.warn(0x0001, 'CoreService', `Failed to save message to database: ${JSON.stringify(saveError)}`);
-            }
+        // ⭐ Nagram 参考：Phase 2 - 从数据库加载（数据库是唯一事实源）
+        // 先尝试从数据库读取最新数据，确保与 DB 一致
+        let dbMessages: Message[] = [];
+        if (this.cacheStorage && savedCount > 0) {
+          const limitForRead = Math.max(limit, savedCount);
+          const dbEntities = await this.cacheStorage.database.queryMessagesByChat(chatId, limitForRead, 0);
+          if (dbEntities && dbEntities.length > 0) {
+            dbMessages = dbEntities.map(entity => this.convertEntityToMessage(entity));
+            dbMessages.sort((a, b) => a.id - b.id);
+            hilog.info(0x0001, 'CoreService', `Phase 2: Loaded ${dbMessages.length} messages from DB for chat ${chatId}`);
           }
-          hilog.info(0x0001, 'CoreService', `Saved ${tdMessages.length} messages to database for chat ${chatId}`);
         }
 
-        // 合并到内存（去重）
-        const existing = this.messagesMap.get(chatId) || [];
-        const allMessages = [...newMessages, ...existing];
-        const unique = Array.from(new Map(allMessages.map(m => [m.id, m])).values());
-        unique.sort((a, b) => a.id - b.id);
-        this.messagesMap.set(chatId, unique);
+        // ⭐ Nagram 参考：Phase 3 - 从 TDLib 原始数据构建 Message[]（用于内存缓存和返回）
+        const convertedMessages = await this.convertTdMessages(tdMessages, chatType);
 
-        // 返回按 ID 升序排序的消息（旧消息在前，新消息在后，符合 UI 显示顺序）
-        newMessages.sort((a, b) => a.id - b.id);
-        return newMessages;
+        // ⭐ Nagram 参考：Phase 4 - 合并数据（优先使用 DB 数据，TDLib 转换数据补充）
+        let resultMessages: Message[];
+        if (dbMessages.length > 0) {
+          // 以 DB 数据为主，用 TDLib 转换数据补充字段（如 senderName）
+          const resultMap = new Map<number, Message>();
+          for (const msg of dbMessages) resultMap.set(msg.id, msg);
+          for (const msg of convertedMessages) {
+            if (resultMap.has(msg.id)) {
+              // 保留 DB 消息，但用 TDLib 数据补充字段
+              const existing = resultMap.get(msg.id)!;
+              if (msg.senderName && !existing.senderName) existing.senderName = msg.senderName;
+              if (msg.media && !existing.media) existing.media = msg.media;
+            } else {
+              resultMap.set(msg.id, msg);
+            }
+          }
+          resultMessages = Array.from(resultMap.values()).sort((a, b) => a.id - b.id);
+        } else {
+          resultMessages = convertedMessages;
+        }
+
+        // ⭐ Phase 5：更新内存缓存（messagesMap 作为 DB 的读缓存）
+        const existing = this.messagesMap.get(chatId) || [];
+        const merged = new Map<number, Message>();
+        for (const msg of existing) merged.set(msg.id, msg);
+        for (const msg of resultMessages) merged.set(msg.id, msg);
+        const mergedArray = Array.from(merged.values()).sort((a, b) => a.id - b.id);
+        this.messagesMap.set(chatId, mergedArray);
+        hilog.info(0x0001, 'CoreService', `Phase 5: Updated memory cache: ${mergedArray.length} messages`);
+
+        // ⭐ 返回按 ID 升序排序的消息
+        return resultMessages;
       }
       return [];
     } catch (error) {
@@ -745,6 +852,8 @@ export class CoreService {
   private publishChatListChanged(): void {
     // ⭐ 实时更新：立即发布，无防抖延迟
     const changedEvent: ChatListChangedEvent = { chats: this.chatList };
+    // ⭐ Nagram 参考：累积批量变更通知
+    this.scheduleBatchFlush(UPDATE_MASK_CHAT_LIST);
     eventBus.emit('chatListChanged', changedEvent);
     
     // 更新最后已知状态，供迟到的订阅者查询
@@ -2040,18 +2149,26 @@ export class CoreService {
       _: 'messageSelfDestructTypeImmediately'
     };
     
+    // 创建缩略图对象
+    const inputThumbnailObj: inputThumbnail = {
+      _: 'inputThumbnail',
+      thumbnail: inputFile,
+      width: 0,
+      height: 0
+    };
+    
+    // ⭐ 创建 inputPhoto 对象（TDLib 更新后需要这层包装）
+    const inputPhotoObj: inputPhoto = {
+      _: 'inputPhoto',
+      photo: inputFile,
+      thumbnail: inputThumbnailObj,
+      width: 0,
+      height: 0
+    };
+    
     const inputMsg: inputMessagePhoto = {
       _: 'inputMessagePhoto',
-      photo: inputFile,
-      thumbnail: {
-        _: 'inputThumbnail',
-        thumbnail: inputFile,
-        width: 0,
-        height: 0
-      },
-      added_sticker_file_ids: [],
-      width: 0,
-      height: 0,
+      photo: inputPhotoObj,
       caption: emptyCaption,
       show_caption_above_media: false,
       self_destruct_type: noSelfDestruct,
@@ -2075,10 +2192,11 @@ export class CoreService {
 
   /**
    * 处理聊天草稿消息变更（由 UpdateService 调用）
+   * ⭐ Nagram 参考：先写数据库（putChats），再更新内存 + UI
    * @param chatId 聊天ID
    * @param draftMessageObj 草稿消息对象
    */
-  public onChatDraftMessageChanged(chatId: number, draftMessageObj: Record<string, Object> | null | undefined): void {
+  public async onChatDraftMessageChanged(chatId: number, draftMessageObj: Record<string, Object> | null | undefined): Promise<void> {
     if (chatId) {
       const chat = this.getChat(chatId);
       if (chat) {
@@ -2099,6 +2217,18 @@ export class CoreService {
         } else {
           chat.draftMessage = undefined;
         }
+        
+        // ⭐ Nagram 参考：先保存到数据库
+        if (this.cacheStorage) {
+          try {
+            const entity = this.convertChatToEntity(chat);
+            await this.cacheStorage.saveChat(entity);
+            hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Chat ${chatId} draft message saved to DB`);
+          } catch (error) {
+            hilog.warn(0x0001, 'CoreService', `Failed to save chat ${chatId} draft to DB: ${JSON.stringify(error)}`);
+          }
+        }
+        
         this.publishChatListChanged();
       }
     }
@@ -2114,12 +2244,28 @@ export class CoreService {
       for (const chat of this.chatList) {
         if (chat.userId === userId) {
           const statusType = statusObj['_'] as string | undefined;
-          const expires = statusObj['expires'] as number | undefined;
+          let userStatus: UserStatus;
           
-          const userStatus: UserStatus = {
-            type: (statusType?.replace('userStatus', '').toLowerCase() as 'online' | 'offline' | 'recently' | 'lastWeek' | 'lastMonth' | 'empty') || 'empty',
-            expires: expires
-          };
+          switch (statusType) {
+            case 'userStatusOnline':
+              userStatus = { _: 'userStatusOnline', expires: statusObj['expires'] as number };
+              break;
+            case 'userStatusOffline':
+              userStatus = { _: 'userStatusOffline', was_online: statusObj['was_online'] as number };
+              break;
+            case 'userStatusRecently':
+              userStatus = { _: 'userStatusRecently', by_my_privacy_settings: statusObj['by_my_privacy_settings'] as boolean || false };
+              break;
+            case 'userStatusLastWeek':
+              userStatus = { _: 'userStatusLastWeek', by_my_privacy_settings: statusObj['by_my_privacy_settings'] as boolean || false };
+              break;
+            case 'userStatusLastMonth':
+              userStatus = { _: 'userStatusLastMonth', by_my_privacy_settings: statusObj['by_my_privacy_settings'] as boolean || false };
+              break;
+            default:
+              userStatus = { _: 'userStatusEmpty' };
+          }
+          
           chat.userStatus = userStatus;
           
           this.publishChatListChanged();
@@ -2137,14 +2283,27 @@ export class CoreService {
 
   /**
    * 处理聊天标题变更（由 UpdateService 调用）
+   * ⭐ Nagram 参考：先写数据库（putChats），再更新内存 + UI
    * @param chatId 聊天ID
    * @param title 新标题
    */
-  public onChatTitleChanged(chatId: number, title: string): void {
+  public async onChatTitleChanged(chatId: number, title: string): Promise<void> {
     if (chatId && title) {
       const chat = this.getChat(chatId);
       if (chat) {
         chat.title = title;
+        
+        // ⭐ Nagram 参考：先保存到数据库
+        if (this.cacheStorage) {
+          try {
+            const entity = this.convertChatToEntity(chat);
+            await this.cacheStorage.saveChat(entity);
+            hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Chat ${chatId} title saved to DB: "${title}"`);
+          } catch (error) {
+            hilog.warn(0x0001, 'CoreService', `Failed to save chat ${chatId} title to DB: ${JSON.stringify(error)}`);
+          }
+        }
+        
         this.publishChatListChanged();
       }
     }
@@ -2216,15 +2375,28 @@ export class CoreService {
   
   /**
    * 处理聊天通知设置变更（由 UpdateService 调用）
+   * ⭐ Nagram 参考：先写数据库（putChats），再更新内存 + UI
    * @param chatId 聊天ID
    * @param settings 通知设置
    */
-  public onChatNotificationSettingsChanged(chatId: number, settings: Record<string, Object> | undefined): void {
+  public async onChatNotificationSettingsChanged(chatId: number, settings: Record<string, Object> | undefined): Promise<void> {
     if (chatId && settings) {
       const chat = this.getChat(chatId);
       if (chat) {
         const muteFor = settings['mute_for'] as number || 0;
         chat.isMuted = muteFor > 0;
+        
+        // ⭐ Nagram 参考：先保存到数据库
+        if (this.cacheStorage) {
+          try {
+            const entity = this.convertChatToEntity(chat);
+            await this.cacheStorage.saveChat(entity);
+            hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Chat ${chatId} notification settings saved to DB`);
+          } catch (error) {
+            hilog.warn(0x0001, 'CoreService', `Failed to save chat ${chatId} notification settings to DB: ${JSON.stringify(error)}`);
+          }
+        }
+        
         this.publishChatListChanged();
       }
     }
@@ -2411,6 +2583,8 @@ export class CoreService {
           avatarEventData['path'] = path as Object;
           avatarEventData['chatId'] = avatarChatId as Object;
           eventBus.emit('core:avatarDownloaded', avatarEventData);
+          // ⭐ Nagram 参考：累积批量变更通知
+          this.scheduleBatchFlush(UPDATE_MASK_USER_AVATAR);
         }
         
         // 发送文件下载进度领域事件
@@ -2420,6 +2594,8 @@ export class CoreService {
         fileProgressData['isCompleted'] = isCompleted as Object;
         fileProgressData['isDownloading'] = isDownloading as Object;
         fileProgressData['localPath'] = path as Object;
+        // ⭐ Nagram 参考：累积批量变更通知
+        this.scheduleBatchFlush(UPDATE_MASK_FILE_PROGRESS);
         eventBus.emit('core:fileDownloadProgress', fileProgressData);
       }
     }
@@ -2427,16 +2603,27 @@ export class CoreService {
 
   /**
    * 处理消息发送成功（由 UpdateService 调用）
+   * ⭐ Nagram 参考：先写数据库（putMessages），再更新内存 + UI
    * @param oldMessageId 旧消息ID
    * @param message 消息对象
    */
-  public onMessageSendSucceeded(oldMessageId: number, message: Record<string, Object>): void {
+  public async onMessageSendSucceeded(oldMessageId: number, message: Record<string, Object>): Promise<void> {
     if (!message) return;
     
     const chatId = message['chat_id'] as number;
     const newMessageId = message['id'] as number;
     
     hilog.info(0x0001, 'CoreService', `Message send succeeded: ${oldMessageId} -> ${newMessageId} in chat ${chatId}`);
+    
+    // ⭐ Nagram 参考：先保存消息到数据库（putMessages 等价）
+    if (this.cacheStorage) {
+      try {
+        await this.saveMessageToDatabase(message, chatId);
+        hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Message ${newMessageId} saved to database (send success)`);
+      } catch (error) {
+        hilog.error(0x0001, 'CoreService', `Failed to save message to database: ${JSON.stringify(error)}`);
+      }
+    }
     
     // 更新本地消息缓存
     const chatMessages = this.messagesMap.get(chatId);
@@ -2451,6 +2638,8 @@ export class CoreService {
         messageSentData['oldMessageId'] = oldMessageId as Object;
         messageSentData['newMessageId'] = newMessageId as Object;
         messageSentData['message'] = oldMsg as Object;
+        // ⭐ Nagram 参考：累积批量变更通知
+        this.scheduleBatchFlush(UPDATE_MASK_MESSAGE_SENT);
         eventBus.emit('core:messageSent', messageSentData);
       }
     }
@@ -2479,6 +2668,8 @@ export class CoreService {
         messageFailedData['chatId'] = chatId as Object;
         messageFailedData['messageId'] = messageId as Object;
         messageFailedData['error'] = error as Object;
+        // ⭐ Nagram 参考：累积批量变更通知
+        this.scheduleBatchFlush(UPDATE_MASK_MESSAGE_FAILED);
         eventBus.emit('core:messageFailed', messageFailedData);
       }
     }
@@ -2486,11 +2677,12 @@ export class CoreService {
 
   /**
    * 处理消息内容编辑（由 UpdateService 调用）
+   * ⭐ Nagram 参考：先写数据库（putMessages），再更新内存 + UI
    * @param chatId 聊天ID
    * @param messageId 消息ID
    * @param newContent 新内容
    */
-  public onMessageContentEdited(chatId: number, messageId: number, newContent: Record<string, Object>): void {
+  public async onMessageContentEdited(chatId: number, messageId: number, newContent: Record<string, Object>): Promise<void> {
     hilog.info(0x0001, 'CoreService', `Message content updated: ${messageId} in chat ${chatId}`);
     
     // 更新本地消息缓存
@@ -2501,11 +2693,35 @@ export class CoreService {
         // 更新消息内容
         msg.content = this.extractContentFromTdlib(newContent);
         msg.isEdited = true;
+        
+        // ⭐ Nagram 参考：先保存消息更新到数据库
+        if (this.cacheStorage && this.cacheStorage.database) {
+          try {
+            // 将内存中的 Message 转为数据库实体
+            const tdlibConverterModule = await import('../core/TdlibConverter');
+            const msgJson = JSON.stringify({
+              'id': messageId,
+              'chat_id': chatId,
+              'content': newContent,
+              'edit_date': Math.floor(Date.now() / 1000)
+            });
+            const msgRecord = JSON.parse(msgJson) as Record<string, Object>;
+            const entity = tdlibConverterModule.TdlibConverter.convertToMessage(msgRecord, chatId);
+            entity.editDate = Math.floor(Date.now() / 1000);
+            await this.cacheStorage.database.updateMessage(entity);
+            hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] Message ${messageId} content updated in DB`);
+          } catch (error) {
+            hilog.warn(0x0001, 'CoreService', `Failed to update message ${messageId} in DB: ${JSON.stringify(error)}`);
+          }
+        }
+        
         // 触发领域事件通知 ViewModel
         const messageEditedData: Record<string, Object> = new Object() as Record<string, Object>;
         messageEditedData['chatId'] = chatId as Object;
         messageEditedData['messageId'] = messageId as Object;
         messageEditedData['message'] = msg as Object;
+        // ⭐ Nagram 参考：累积批量变更通知
+        this.scheduleBatchFlush(UPDATE_MASK_MESSAGE_EDITED);
         eventBus.emit('core:messageEdited', messageEditedData);
       }
     }
@@ -2527,6 +2743,8 @@ export class CoreService {
       chatActionData['chatId'] = chatId as Object;
       chatActionData['actionType'] = actionType as Object;
       chatActionData['action'] = action as Object;
+      // ⭐ Nagram 参考：累积批量变更通知
+      this.scheduleBatchFlush(UPDATE_MASK_CHAT_ACTION);
       eventBus.emit('core:chatAction', chatActionData);
     }
   }
@@ -2537,11 +2755,8 @@ export class CoreService {
    * @param messageIds 消息ID数组
    * @param isPermanent 是否永久删除
    */
-  // ⭐ 防止重复处理删除事件的集合（key: "chatId_msgId1,msgId2,..."）
-  private processedDeletions: Set<string> = new Set();
-  
-  // ⭐ 已删除消息 ID 集合（持久化到内存，重启后失效，由 TDLib 保证最终一致性）
-  private deletedMessageIds: Set<number> = new Set();
+  // ⭐ 已删除消息 ID 集合（已被 onMessagesDeleted 处理过的消息ID）
+  // 用于过滤 TDLib 返回的消息列表中已删除的消息
 
   public async onMessagesDeleted(chatId: number, messageIds: number[], isPermanent: boolean): Promise<void> {
     if (!chatId) {
@@ -2614,6 +2829,8 @@ export class CoreService {
       messageDeletedData['messageIds'] = messageIds as Object;
       messageDeletedData['isPermanent'] = isPermanent as Object;
       hilog.info(0x0001, 'CoreService', `📢 Emitting core:messageDeleted event for chat ${chatId}`);
+      // ⭐ Nagram 参考：累积批量变更通知
+      this.scheduleBatchFlush(UPDATE_MASK_MESSAGE_DELETED);
       eventBus.emit('core:messageDeleted', messageDeletedData);
 
       // 刷新聊天列表（最后消息可能变化）
@@ -2678,6 +2895,8 @@ export class CoreService {
       // 转发领域事件
       const connectionStateData: Record<string, Object> = new Object() as Record<string, Object>;
       connectionStateData['state'] = stateType as Object;
+      // ⭐ Nagram 参考：累积批量变更通知
+      this.scheduleBatchFlush(UPDATE_MASK_CONNECTION);
       eventBus.emit('core:connectionStateUpdated', connectionStateData);
     }
   }
@@ -2798,21 +3017,27 @@ export class CoreService {
     const fullName = `${userEntity['firstName'] as string || ''} ${userEntity['lastName'] as string || ''}`.trim();
 
     // 解析在线状态
-    let userStatus: UserStatus = { type: 'empty' };
+    let userStatus: UserStatus = { _: 'userStatusEmpty' };
     let onlineStatus: OnlineStatus = OnlineStatus.OFFLINE;
     try {
       const statusJson = (userEntity['statusJson'] as string) || '{}';
       const statusObj = JSON.parse(statusJson) as Record<string, Object>;
       const statusType = statusObj['@type'] as string;
       if (statusType === 'userStatusOnline') {
-        userStatus = { type: 'online', expires: (statusObj['expires'] as number) || 0 };
+        userStatus = { _: 'userStatusOnline', expires: (statusObj['expires'] as number) || 0 };
         onlineStatus = OnlineStatus.ONLINE;
       } else if (statusType === 'userStatusOffline') {
-        userStatus = { type: 'offline', wasOnline: (statusObj['was_online'] as number) || 0 };
+        userStatus = { _: 'userStatusOffline', was_online: (statusObj['was_online'] as number) || 0 };
         onlineStatus = OnlineStatus.OFFLINE;
       } else if (statusType === 'userStatusRecently') {
-        userStatus = { type: 'recently' };
+        userStatus = { _: 'userStatusRecently', by_my_privacy_settings: false };
         onlineStatus = OnlineStatus.RECENTLY;
+      } else if (statusType === 'userStatusLastWeek') {
+        userStatus = { _: 'userStatusLastWeek', by_my_privacy_settings: false };
+        onlineStatus = OnlineStatus.WEEK_AGO;
+      } else if (statusType === 'userStatusLastMonth') {
+        userStatus = { _: 'userStatusLastMonth', by_my_privacy_settings: false };
+        onlineStatus = OnlineStatus.MONTH_AGO;
       }
     } catch (e) {
       // 解析失败使用默认状态
@@ -2826,10 +3051,26 @@ export class CoreService {
     const profilePhotoFileId = (userEntity['profilePhotoFileId'] as string) || '';
     const lastUpdated = (userEntity['lastUpdated'] as number) || Date.now();
 
+    // 构建 Usernames 对象
+    const usernamesObj: Usernames | undefined = username ? {
+      _: 'usernames',
+      active_usernames: [username],
+      disabled_usernames: [],
+      editable_username: username,
+      collectible_usernames: []
+    } : undefined;
+
+    // 构建 PhoneNumber 对象
+    const phoneItem: PhoneNumber = {
+      number: phoneNumber,
+      label: 'mobile',
+      normalizedNumber: phoneNumber.replace(/\D/g, '')
+    };
+
     const contact: Contact = {
       id: userId,
       userId: userId,
-      usernames: username ? [username] : [],
+      usernames: usernamesObj,
       isVerified: (userEntity['isVerified'] as boolean) || false,
       isPremium: (userEntity['isPremium'] as boolean) || false,
       isBot: (userEntity['isBot'] as boolean) || false,
@@ -2839,11 +3080,7 @@ export class CoreService {
       fullName: fullName,
       avatarPath: '',
       avatarFileId: Number(profilePhotoFileId) || 0,
-      phones: phoneNumber ? [{
-        number: phoneNumber,
-        label: 'mobile',
-        normalizedNumber: phoneNumber.replace(/\D/g, '')
-      }] : [],
+      phones: phoneNumber ? [phoneItem] : [],
       emails: [],
       phone: phoneNumber,
       syncSource: 'tdlib',
@@ -2861,7 +3098,7 @@ export class CoreService {
    * 将 TDLib User 转换为 Contact
    */
   private convertToContact(userResult: User): Contact {
-    let userStatus: UserStatus = { type: 'empty' };
+    let userStatus: UserStatus = { _: 'userStatusEmpty' };
     let onlineStatus: OnlineStatus = OnlineStatus.OFFLINE;
 
     if (userResult.status) {
@@ -2871,20 +3108,20 @@ export class CoreService {
 
       if (statusType === 'userStatusOnline') {
         const expires = statusObj['expires'] as number;
-        userStatus = { type: 'online', expires: expires || 0 };
+        userStatus = { _: 'userStatusOnline', expires: expires || 0 };
         onlineStatus = OnlineStatus.ONLINE;
       } else if (statusType === 'userStatusOffline') {
         const wasOnline = statusObj['was_online'] as number;
-        userStatus = { type: 'offline', wasOnline: wasOnline || 0 };
+        userStatus = { _: 'userStatusOffline', was_online: wasOnline || 0 };
         onlineStatus = OnlineStatus.OFFLINE;
       } else if (statusType === 'userStatusRecently') {
-        userStatus = { type: 'recently' };
+        userStatus = { _: 'userStatusRecently', by_my_privacy_settings: false };
         onlineStatus = OnlineStatus.RECENTLY;
       } else if (statusType === 'userStatusLastWeek') {
-        userStatus = { type: 'lastWeek' };
+        userStatus = { _: 'userStatusLastWeek', by_my_privacy_settings: false };
         onlineStatus = OnlineStatus.WEEK_AGO;
       } else if (statusType === 'userStatusLastMonth') {
-        userStatus = { type: 'lastMonth' };
+        userStatus = { _: 'userStatusLastMonth', by_my_privacy_settings: false };
         onlineStatus = OnlineStatus.MONTH_AGO;
       }
     }
@@ -2916,21 +3153,26 @@ export class CoreService {
       isBot = typeValue === 'userTypeBot';
     }
 
-    const usernamesObj = userResult.usernames as Object | undefined;
-    let usernames: string[] = [];
-    if (usernamesObj && typeof usernamesObj === 'object') {
-      const usernamesRecord = usernamesObj as Record<string, string[]>;
-      const activeUsernames = usernamesRecord['active_usernames'];
-      if (activeUsernames) {
-        usernames = [...activeUsernames];
-      }
+    // 处理 usernames，从 TDLib 原始数据转换为 Usernames 对象
+    const rawUsernames = userResult.usernames as Object | undefined;
+    let usernames: Usernames | undefined;
+    if (rawUsernames && typeof rawUsernames === 'object') {
+      const usernamesRecord = rawUsernames as Record<string, Object>;
+      usernames = {
+        _: 'usernames',
+        active_usernames: (usernamesRecord['active_usernames'] as string[]) || [],
+        disabled_usernames: (usernamesRecord['disabled_usernames'] as string[]) || [],
+        editable_username: (usernamesRecord['editable_username'] as string) || '',
+        collectible_usernames: (usernamesRecord['collectible_usernames'] as string[]) || []
+      };
     }
 
-    const phoneNumber: PhoneNumber | null = userResult.phone_number ? {
-      number: userResult.phone_number,
+    // 构建 PhoneNumber 对象
+    const phoneNumberItem: PhoneNumber = {
+      number: userResult.phone_number || '',
       label: 'mobile',
-      normalizedNumber: userResult.phone_number.replace(/\D/g, '')
-    } : null;
+      normalizedNumber: (userResult.phone_number || '').replace(/\D/g, '')
+    };
 
     const contact: Contact = {
       id: userResult.id,
@@ -2945,7 +3187,7 @@ export class CoreService {
       fullName: `${userResult.first_name || ''} ${userResult.last_name || ''}`.trim(),
       avatarPath: avatarPath,
       avatarFileId: avatarFileId,
-      phones: phoneNumber ? [phoneNumber] : [],
+      phones: userResult.phone_number ? [phoneNumberItem] : [],
       emails: [],
       phone: userResult.phone_number || '',
       syncSource: 'tdlib',
@@ -2993,7 +3235,8 @@ export class CoreService {
     const contacts = allContacts.filter(contact => {
       const fullName = `${contact.firstName} ${contact.lastName || ''}`.toLowerCase();
       const phone = contact.phone.toLowerCase();
-      const username = contact.usernames && contact.usernames.length > 0 ? contact.usernames[0].toLowerCase() : '';
+      const activeUsernames = contact.usernames?.active_usernames || [];
+      const username = activeUsernames.length > 0 ? activeUsernames[0].toLowerCase() : '';
 
       return fullName.includes(lowerQuery) ||
       phone.includes(lowerQuery) ||
@@ -3026,7 +3269,8 @@ export class CoreService {
 
     const exactMatch = contacts.find(contact => {
       const fullName = `${contact.firstName} ${contact.lastName || ''}`.toLowerCase();
-      const username = contact.usernames && contact.usernames.length > 0 ? contact.usernames[0].toLowerCase() : '';
+      const activeUsernames = contact.usernames?.active_usernames || [];
+      const username = activeUsernames.length > 0 ? activeUsernames[0].toLowerCase() : '';
       return fullName === lowerQuery || username === lowerQuery;
     });
 
@@ -3123,7 +3367,7 @@ export class CoreService {
     const onlineCount: number = contacts.filter((c: Contact) => {
       const status = c.status;
       if (!status) return false;
-      return status.type === 'online';
+      return status._ === 'userStatusOnline';
     }).length;
     const stats: ContactStats = {
       totalContacts: contacts.length,
@@ -3137,13 +3381,13 @@ export class CoreService {
   // ==================== 聊天消息操作 ====================
 
   /**
-   * 获取聊天历史消息
+   * ⭐ Nagram：获取聊天历史消息（先写入数据库）
    * @param chatId 聊天ID
    * @param fromMessageId 起始消息ID
    * @param offset 偏移量
    * @param limit 限制数量
    * @param onlyLocal 是否只获取本地消息
-   * @returns 消息数组
+   * @returns 消息数组（TDLib 原始对象）
    */
   public async getChatHistory(
     chatId: number,
@@ -3158,17 +3402,10 @@ export class CoreService {
       const historyObj = JSON.parse(JSON.stringify(history)) as Record<string, Object>;
       const messages = historyObj['messages'] as Array<Object> || [];
 
-      // ⭐ 保存消息到数据库（如果不是仅从本地获取）
-      if (!onlyLocal && this.cacheStorage && messages.length > 0) {
-        for (const msg of messages) {
-          try {
-            const msgRecord = JSON.parse(JSON.stringify(msg)) as Record<string, Object>;
-            await this.saveMessageToDatabase(msgRecord, chatId);
-          } catch (saveError) {
-            hilog.warn(0x0001, 'CoreService', `Failed to save message to database: ${JSON.stringify(saveError)}`);
-          }
-        }
-        hilog.info(0x0001, 'CoreService', `Saved ${messages.length} messages from getChatHistory to database for chat ${chatId}`);
+      // ⭐ Nagram 参考：先批量写入数据库，再返回数据
+      if (!onlyLocal && messages.length > 0) {
+        const savedCount = await this.batchSaveMessagesToDatabase(messages, chatId);
+        hilog.info(0x0001, 'CoreService', `getChatHistory: saved ${savedCount}/${messages.length} messages to DB for chat ${chatId}`);
       }
 
       return messages;
@@ -3215,12 +3452,18 @@ export class CoreService {
       hilog.info(0x0001, 'CoreService', `🗑️ [START] Deleting ${messageIds.length} messages in chat ${chatId}, revoke=${revoke}`);
       hilog.info(0x0001, 'CoreService', `🗑️ Message IDs: ${JSON.stringify(messageIds)}`);
       
+      // ⭐ Nagram 参考：将用户发起的删除标记记录下来
+      // 防止 TDLib 的 updateDeleteMessages 事件被重复处理
+      for (const msgId of messageIds) {
+        const key = `${chatId}_${msgId}`;
+        this.userInitiatedDeletions.add(key);
+      }
+      
       // ⭐ 先调用 TDLib API
       await this.tdLibApi.deleteMessages(chatId, messageIds, revoke);
       hilog.info(0x0001, 'CoreService', `✅ TDLib API call succeeded for deleting ${messageIds.length} messages`);
       
-      // ⭐ 关键修复：立即执行本地数据清理，不等待 TDLib 事件
-      // 这样可以防止网络延迟导致的幽灵消息
+      // ⭐ 立即执行本地数据清理，不等待 TDLib 事件
       hilog.info(0x0001, 'CoreService', `🧹 Starting local cleanup...`);
       await this.onMessagesDeleted(chatId, messageIds, revoke);
       hilog.info(0x0001, 'CoreService', `✅ Local cleanup completed for ${messageIds.length} messages`);
@@ -3288,6 +3531,45 @@ export class CoreService {
   }
 
   /**
+   * ⭐ Nagram 参考：批量保存消息到数据库（先写入数据库，再返回数据）
+   * 所有消息在返回给调用方之前必须写入数据库，确保数据库是唯一事实源
+   * @param tdMessages TDLib 原始消息对象数组
+   * @param chatId 聊天ID
+   * @returns 成功保存的消息数量
+   */
+  private async batchSaveMessagesToDatabase(tdMessages: Array<Object | null>, chatId: number): Promise<number> {
+    if (!this.cacheStorage || tdMessages.length === 0) return 0;
+
+    try {
+      const tdlibConverterModule = await import('../core/TdlibConverter');
+      const entities: MessageEntity[] = [];
+
+      for (const msg of tdMessages) {
+        if (!msg) continue;
+        const msgJson = JSON.stringify(msg);
+        const msgRecord = JSON.parse(msgJson) as Record<string, Object>;
+        const entity = tdlibConverterModule.TdlibConverter.convertToMessage(msgRecord, chatId);
+        entities.push(entity);
+      }
+
+      if (entities.length === 0) return 0;
+
+      // ⭐ 批量写入数据库（使用优化后的批量插入方法）
+      const result = await this.cacheStorage.database.insertMessagesBatchOptimized(entities);
+      if (result.success) {
+        hilog.info(0x0001, 'CoreService', `💾 Batch saved ${entities.length} messages to DB for chat ${chatId}`);
+        return entities.length;
+      } else {
+        hilog.error(0x0001, 'CoreService', `Batch save to DB failed: ${result.errorCode}`);
+        return 0;
+      }
+    } catch (error) {
+      hilog.error(0x0001, 'CoreService', `Batch save to DB exception: ${JSON.stringify(error)}`);
+      return 0;
+    }
+  }
+
+  /**
    * 获取缓存的联系人列表（同步）
    * @returns 联系人数组，如果没有缓存返回空数组
    */
@@ -3341,9 +3623,9 @@ export class CoreService {
         first_name: meRecord['first_name'],
         last_name: meRecord['last_name'],
         username: meRecord['username'],
-        usernames: meRecord['usernames'],
+        usernames: meRecord['usernames'] || meRecord['usernames_'],
         phone_number: meRecord['phone_number'],
-        profile_photo: meRecord['profile_photo'],
+        profile_photo: meRecord['profile_photo'] || meRecord['profile_photo_'],
         full_info: fullInfo
       });
       return JSON.parse(combinedJson) as Record<string, Object>;
@@ -3354,35 +3636,33 @@ export class CoreService {
   }
 
   /**
-   * 获取指定聊天的缓存消息（优先从内存，其次从数据库）
+   * ⭐ Nagram 参考：获取指定聊天的缓存消息（数据库优先，内存次之）
    * @param chatId 聊天ID
    * @returns 消息数组，如果没有缓存返回空数组
    */
   public async getCachedMessages(chatId: number): Promise<Message[]> {
-    // 1. 优先从内存获取
-    const memoryMessages = this.messagesMap.get(chatId);
-    if (memoryMessages && memoryMessages.length > 0) {
-      hilog.info(0x0001, 'CoreService', `getCachedMessages: ${memoryMessages.length} messages from memory for chat ${chatId}`);
-      return memoryMessages;
-    }
-
-    // 2. 从数据库加载
+    // ⭐ Nagram 参考：数据库是唯一事实源，优先从数据库加载
     if (this.cacheStorage) {
       try {
         const dbMessages = await this.cacheStorage.getMessages(chatId, 50, 0);
         if (dbMessages && dbMessages.length > 0) {
-          // 将 MessageEntity 转换为 Message
           const convertedMessages = dbMessages.map(entity => this.convertEntityToMessage(entity));
-          // 按 ID 升序排序
           convertedMessages.sort((a, b) => a.id - b.id);
-          // 存入内存缓存
+          // ⭐ 更新内存缓存，保持一致性
           this.messagesMap.set(chatId, convertedMessages);
-          hilog.info(0x0001, 'CoreService', `getCachedMessages: ${convertedMessages.length} messages from database for chat ${chatId}`);
+          hilog.info(0x0001, 'CoreService', `getCachedMessages: ${convertedMessages.length} messages from DB for chat ${chatId}`);
           return convertedMessages;
         }
       } catch (error) {
         hilog.error(0x0001, 'CoreService', `Failed to load messages from database: ${JSON.stringify(error)}`);
       }
+    }
+
+    // ⭐ 数据库没有时，从内存缓存获取（可能是未持久化的新消息）
+    const memoryMessages = this.messagesMap.get(chatId);
+    if (memoryMessages && memoryMessages.length > 0) {
+      hilog.info(0x0001, 'CoreService', `getCachedMessages: ${memoryMessages.length} messages from memory for chat ${chatId} (DB empty)`);
+      return memoryMessages;
     }
 
     return [];
@@ -3401,6 +3681,38 @@ export class CoreService {
     // 直接覆盖内存缓存
     this.messagesMap.set(chatId, messages);
     hilog.debug(0x0001, 'CoreService', `Saved ${messages.length} messages to memory cache for chat ${chatId}`);
+  }
+
+  /**
+   * ⭐ Nagram 参考：累积变更并调度批量刷新
+   * 等价于 Nagram processUpdateArray 中的 interfaceUpdateMask |= MASK
+   * @param maskBit 更新的位掩码
+   */
+  private scheduleBatchFlush(maskBit: number): void {
+    this.pendingUpdateMask |= maskBit;
+    if (this.batchFlushTimer === -1) {
+      this.batchFlushTimer = setTimeout(() => {
+        this.flushUpdates();
+      }, FLUSH_DELAY_MS);
+    }
+  }
+
+  /**
+   * ⭐ Nagram 参考：刷新累积的更新到 ViewModel
+   * 等价于 Nagram 中收集所有变更后 postNotificationName
+   */
+  private flushUpdates(): void {
+    this.batchFlushTimer = -1;
+    if (this.pendingUpdateMask === 0) return;
+
+    const mask = this.pendingUpdateMask;
+    this.pendingUpdateMask = 0;
+
+    // ⭐ 发送 batchUpdate 事件
+    // ViewModel 订阅此事件，按位掩码决定刷新哪些部分
+    const batchUpdateData: Record<string, Object> = new Object() as Record<string, Object>;
+    batchUpdateData['mask'] = mask as Object;
+    eventBus.emit('core:batchUpdate', batchUpdateData);
   }
 
   /**
@@ -3677,27 +3989,27 @@ export class CoreService {
     switch (statusType) {
       case 'userStatusOnline':
         const onlineStatus: UserStatus = {
-          type: 'online',
+          _: 'userStatusOnline',
           expires: statusRecord['expires'] as number || 0
         };
         return onlineStatus;
       case 'userStatusOffline':
         const offlineStatus: UserStatus = {
-          type: 'offline',
-          wasOnline: statusRecord['was_online'] as number || 0
+          _: 'userStatusOffline',
+          was_online: statusRecord['was_online'] as number || 0
         };
         return offlineStatus;
       case 'userStatusRecently':
-        const recentlyStatus: UserStatus = { type: 'recently' };
+        const recentlyStatus: UserStatus = { _: 'userStatusRecently', by_my_privacy_settings: false };
         return recentlyStatus;
       case 'userStatusLastWeek':
-        const lastWeekStatus: UserStatus = { type: 'lastWeek' };
+        const lastWeekStatus: UserStatus = { _: 'userStatusLastWeek', by_my_privacy_settings: false };
         return lastWeekStatus;
       case 'userStatusLastMonth':
-        const lastMonthStatus: UserStatus = { type: 'lastMonth' };
+        const lastMonthStatus: UserStatus = { _: 'userStatusLastMonth', by_my_privacy_settings: false };
         return lastMonthStatus;
       default:
-        const emptyStatus: UserStatus = { type: 'empty' };
+        const emptyStatus: UserStatus = { _: 'userStatusEmpty' };
         return emptyStatus;
     }
   }
@@ -3869,13 +4181,51 @@ export class CoreService {
   }
 
   /**
-   * 处理消息删除（UpdateService 入口）
+   * ⭐ Nagram 参考：处理消息删除（UpdateService 入口）
+   * 区分用户发起的删除 vs TDLib 内部清理
+   * - 用户发起的删除：已通过 deleteMessages() 内的标记，此时跳过避免重复
+   * - TDLib 内部清理：只对 isPermanent 的删除进行处理
+   * - 非 permanent 的 TDLib 删除事件忽略（可能是过期消息等临时清理）
    */
   public async onUpdateDeleteMessages(update: Record<string, Object>): Promise<void> {
     const chatId = update['chat_id'] as number;
     const messageIds = update['message_ids'] as number[];
     const isPermanent = update['is_permanent'] as boolean;
-    await this.onMessagesDeleted(chatId, messageIds, isPermanent);
+
+    // ⭐ 检查：这些删除是用户发起的吗？
+    const userInitiatedIds: number[] = [];
+    const otherIds: number[] = [];
+    for (const msgId of messageIds) {
+      const key = `${chatId}_${msgId}`;
+      if (this.userInitiatedDeletions.has(key)) {
+        userInitiatedIds.push(msgId);
+        // 清理标记
+        this.userInitiatedDeletions.delete(key);
+      } else {
+        otherIds.push(msgId);
+      }
+    }
+
+    // ⭐ 用户发起的删除：直接处理（已在 deleteMessages 中执行过 onMessagesDeleted）
+    // 但 TDLib 的 updateDeleteMessages 是可靠事件，再次执行确保一致性
+    if (userInitiatedIds.length > 0) {
+      hilog.info(0x0001, 'CoreService',
+        `User-initiated deletion confirmed: ${userInitiatedIds.length} messages in chat ${chatId}`);
+      // 不重复执行 onMessagesDeleted，因为 deleteMessages 已执行
+      // 仅清理追踪标记
+    }
+
+    // ⭐ 非用户发起的删除：仅当 isPermanent 时才处理
+    if (otherIds.length > 0) {
+      if (isPermanent) {
+        hilog.info(0x0001, 'CoreService',
+          `Processing TDLib permanent deletion: ${otherIds.length} messages in chat ${chatId}`);
+        await this.onMessagesDeleted(chatId, otherIds, isPermanent);
+      } else {
+        hilog.info(0x0001, 'CoreService',
+          `Skipping non-permanent TDLib deletion: ${otherIds.length} messages in chat ${chatId} (server-side cleanup)`);
+      }
+    }
   }
 
   /**
@@ -3978,11 +4328,12 @@ export class CoreService {
 
   /**
    * 处理聊天标题更新（UpdateService 入口）
+   * ⭐ Nagram 参考：先写数据库，再更新内存
    */
-  public onUpdateChatTitle(update: Record<string, Object>): void {
+  public async onUpdateChatTitle(update: Record<string, Object>): Promise<void> {
     const chatId = update['chat_id'] as number;
     const title = update['title'] as string;
-    this.onChatTitleChanged(chatId, title);
+    await this.onChatTitleChanged(chatId, title);
   }
 
   /**
@@ -4202,9 +4553,25 @@ export class CoreService {
 
   /**
    * 处理用户更新（UpdateService 入口）
+   * ⭐ Nagram 参考：先写数据库（putUsers），再更新内存
    */
-  public onUpdateUser(update: Record<string, Object>): void {
+  public async onUpdateUser(update: Record<string, Object>): Promise<void> {
     const userId = update['user_id'] as number;
+    
+    // ⭐ Nagram 参考：先保存用户数据到数据库
+    // TDLib updateUser 包含完整 user 对象，直接持久化
+    const userObj = update['user'] as Record<string, Object> | undefined;
+    if (userObj && this.cacheStorage) {
+      try {
+        const tdlibConverterModule = await import('../core/TdlibConverter');
+        const userEntity = tdlibConverterModule.TdlibConverter.convertToUser(userObj);
+        await this.cacheStorage.saveUser(userEntity);
+        hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] User ${userId} saved to database`);
+      } catch (error) {
+        hilog.warn(0x0001, 'CoreService', `Failed to save user ${userId} to DB: ${JSON.stringify(error)}`);
+      }
+    }
+    
     this.onUserUpdated(userId);
   }
 
@@ -4218,10 +4585,26 @@ export class CoreService {
 
   /**
    * 处理用户状态更新（UpdateService 入口）
+   * ⭐ Nagram 参考：先写数据库，再更新内存
    */
-  public onUpdateUserStatus(update: Record<string, Object>): void {
+  public async onUpdateUserStatus(update: Record<string, Object>): Promise<void> {
     const userId = update['user_id'] as number;
     const status = update['status'] as Record<string, Object>;
+    
+    // ⭐ Nagram 参考：同步用户状态到数据库
+    if (this.cacheStorage && userId) {
+      try {
+        const existingEntity = await this.cacheStorage.database.getUserByUserId(userId);
+        if (existingEntity) {
+          existingEntity.statusJson = JSON.stringify(status);
+          await this.cacheStorage.database.updateUser(existingEntity);
+          hilog.debug(0x0001, 'CoreService', `💾 [DB-FIRST] User ${userId} status updated in DB`);
+        }
+      } catch (error) {
+        hilog.warn(0x0001, 'CoreService', `Failed to update user ${userId} status in DB: ${JSON.stringify(error)}`);
+      }
+    }
+    
     this.onUserStatusUpdated(userId, status);
   }
 
