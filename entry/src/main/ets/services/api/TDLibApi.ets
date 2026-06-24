@@ -169,7 +169,7 @@ import type {
   BotMenuButton,
   BotCommands,
   AttachmentMenuBot,
-  BusinessConnectedBot,
+  businessConnectedBot,
   BusinessConnection,
   BusinessFeatures,
   BusinessChatLinks,
@@ -255,7 +255,7 @@ import type {
   InlineQueryResult,
   PreparedInlineMessage,
   PreparedInlineMessageId,
-  SentWebAppMessage,
+  InlineMessageId,
   MainWebApp,
   WebAppInfo,
   TMeUrls,
@@ -266,7 +266,7 @@ import type {
   MessageSender,
   messageSendOptions$Input,
   ReplyMarkup,
-  InputMessageContent,
+  MessageContent,
 
   // ==================== 统计与分析 ====================
   StatisticalGraph,
@@ -309,7 +309,6 @@ import type {
   FoundMessages,
   InputMessageReplyTo,
   inputTextQuote$Input,
-  inputChecklist,
   BusinessMessage,
   StoryPrivacySettings,
   ForumTopics,
@@ -330,7 +329,6 @@ import type {
   CheckChatUsernameResult,
   ChatAdministrators,
   ChatMembers,
-  InputFile,
   NotificationSettingsScope,
   TopChatCategory$Input,
   CurrentWeather,
@@ -401,7 +399,7 @@ import type {
   PublicChatType$Input,
   forumTopicIcon,
   TextParseMode$Input,
-  inputChecklistTask,
+  checklistTask,
   targetChatTypes$Input,
   Outline,
   webAppOpenParameters$Input,
@@ -409,6 +407,11 @@ import type {
   Users,
   ChatMember,
   chatNotificationSettings$Input,
+  inputChecklist$Input,
+  InputFile$Input,
+  draftMessage$Input,
+  MessageSender$Input,
+  formattedText$Input,
 } from './factory/tdlib-types';
 
 export class TDLibApi {
@@ -585,24 +588,24 @@ export class TDLibApi {
    * 请求二维码认证
    * @param other_user_ids 其他正在使用应用的用户 ID 列表
    */
-  requestQrCodeAuthentication(other_user_ids: number[]): Promise<Record<string, Object>> {
+  requestQrCodeAuthentication(other_user_ids: number[]): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'requestQrCodeAuthentication',
       'other_user_ids': other_user_ids,
     };
-    return this.client.execute<Record<string, Object>>(params);
+    return this.client.execute<Ok>(params);
   }
 
   /**
-   * 导入 Bot 授权（登录 Bot 账号）
-   * @param bot_auth_token Bot Token
+   * 使用 Bot Token 导入授权（用于 Bot 登录）
+   * @param bot_token Bot Token 字符串
    */
-  importBotAuthorization(bot_auth_token: string): Promise<Record<string, Object>> {
+  importBotAuthorization(bot_token: string): Promise<AuthorizationState> {
     const params: Record<string, Object> = {
       '@type': 'importBotAuthorization',
-      'bot_auth_token': bot_auth_token,
+      'bot_token': bot_token,
     };
-    return this.client.execute<Record<string, Object>>(params);
+    return this.client.execute<AuthorizationState>(params);
   }
 
   /**
@@ -798,11 +801,11 @@ export class TDLibApi {
   /**
    * 获取当前状态（所有更新）
    */
-  getCurrentState(): Promise<Record<string, Object>> {
+  getCurrentState(): Promise<Updates> {
     const params: Record<string, Object> = {
       '@type': 'getCurrentState',
     };
-    return this.client.execute<Record<string, Object>>(params);
+    return this.client.execute<Updates>(params);
   }
 
   /**
@@ -1578,18 +1581,18 @@ export class TDLibApi {
   /**
    * 获取当前连接的商业 Bot
    */
-  getBusinessConnectedBot(): Promise<BusinessConnectedBot> {
+  getBusinessConnectedBot(): Promise<businessConnectedBot> {
     const params: Record<string, Object> = {
       '@type': 'getBusinessConnectedBot',
     };
-    return this.client.execute<BusinessConnectedBot>(params);
+    return this.client.execute<businessConnectedBot>(params);
   }
 
   /**
    * 设置连接的商业 Bot
    * @param bot 商业 Bot 连接信息
    */
-  setBusinessConnectedBot(bot: BusinessConnectedBot): Promise<Ok> {
+  setBusinessConnectedBot(bot: businessConnectedBot): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setBusinessConnectedBot',
       'bot': bot,
@@ -2021,12 +2024,12 @@ export class TDLibApi {
    * 获取相似 Bot
    * @param bot_user_id Bot ID
    */
-  getBotSimilarBots(bot_user_id: number): Promise<Record<string, Object>> {
+  getBotSimilarBots(bot_user_id: number): Promise<Users> {
     const params: Record<string, Object> = {
       '@type': 'getBotSimilarBots',
       'bot_user_id': bot_user_id,
     };
-    return this.client.execute<Record<string, Object>>(params);
+    return this.client.execute<Users>(params);
   }
 
   /**
@@ -3461,7 +3464,7 @@ export class TDLibApi {
     topic_id: MessageTopic | null,
     reply_to: InputMessageReplyTo | null,
     options: messageSendOptions$Input | null,
-    input_message_contents: InputMessageContent[]
+    input_message_contents: MessageContent[]
   ): Promise<Messages> {
     const params: Record<string, Object> = {
       '@type': 'sendMessageAlbum',
@@ -3624,7 +3627,7 @@ export class TDLibApi {
     sender_id: MessageSender,
     reply_to: InputMessageReplyTo | null,
     disable_notification: boolean,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Message> {
     const params: Record<string, Object> = {
       '@type': 'addLocalMessage',
@@ -3698,7 +3701,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Message> {
     const params: Record<string, Object> = {
       '@type': 'editMessageText',
@@ -3759,7 +3762,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    checklist: inputChecklist
+    checklist: inputChecklist$Input
   ): Promise<Message> {
     const params: Record<string, Object> = {
       '@type': 'editMessageChecklist',
@@ -3784,7 +3787,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Message> {
     const params: Record<string, Object> = {
       '@type': 'editMessageMedia',
@@ -3855,7 +3858,7 @@ export class TDLibApi {
   editInlineMessageText(
     inline_message_id: string,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'editInlineMessageText',
@@ -3910,7 +3913,7 @@ export class TDLibApi {
   editInlineMessageMedia(
     inline_message_id: string,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'editInlineMessageMedia',
@@ -4025,7 +4028,7 @@ export class TDLibApi {
     protect_content: boolean,
     effect_id: number,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<BusinessMessage> {
     const params: Record<string, Object> = {
       '@type': 'sendBusinessMessage',
@@ -4062,7 +4065,7 @@ export class TDLibApi {
     disable_notification: boolean,
     protect_content: boolean,
     effect_id: number,
-    input_message_contents: InputMessageContent[]
+    input_message_contents: MessageContent[]
   ): Promise<BusinessMessage> {
     const params: Record<string, Object> = {
       '@type': 'sendBusinessMessageAlbum',
@@ -4092,7 +4095,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<BusinessMessage> {
     const params: Record<string, Object> = {
       '@type': 'editBusinessMessageText',
@@ -4159,7 +4162,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    checklist: inputChecklist
+    checklist: inputChecklist$Input
   ): Promise<BusinessMessage> {
     const params: Record<string, Object> = {
       '@type': 'editBusinessMessageChecklist',
@@ -4187,7 +4190,7 @@ export class TDLibApi {
     chat_id: number,
     message_id: number,
     reply_markup: ReplyMarkup | null,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<BusinessMessage> {
     const params: Record<string, Object> = {
       '@type': 'editBusinessMessageMedia',
@@ -4579,7 +4582,7 @@ export class TDLibApi {
   addQuickReplyShortcutMessage(
     shortcut_name: string,
     reply_to_message_id: number,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<QuickReplyMessage> {
     const params: Record<string, Object> = {
       '@type': 'addQuickReplyShortcutMessage',
@@ -4625,7 +4628,7 @@ export class TDLibApi {
   addQuickReplyShortcutMessageAlbum(
     shortcut_name: string,
     reply_to_message_id: number,
-    input_message_contents: InputMessageContent[]
+    input_message_contents: MessageContent[]
   ): Promise<QuickReplyMessages> {
     const params: Record<string, Object> = {
       '@type': 'addQuickReplyShortcutMessageAlbum',
@@ -4659,7 +4662,7 @@ export class TDLibApi {
   editQuickReplyMessage(
     shortcut_id: number,
     message_id: number,
-    input_message_content: InputMessageContent
+    input_message_content: MessageContent
   ): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'editQuickReplyMessage',
@@ -5504,7 +5507,7 @@ export class TDLibApi {
    * @param message_id 消息 ID
    * @param tasks 任务列表
    */
-  addChecklistTasks(chat_id: number, message_id: number, tasks: inputChecklistTask[]): Promise<Ok> {
+  addChecklistTasks(chat_id: number, message_id: number, tasks: checklistTask[]): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'addChecklistTasks',
       'chat_id': chat_id,
@@ -5934,13 +5937,13 @@ export class TDLibApi {
    * @param web_app_query_id 查询 ID
    * @param result 内联查询结果
    */
-  answerWebAppQuery(web_app_query_id: string, result: InlineQueryResult): Promise<SentWebAppMessage> {
+  answerWebAppQuery(web_app_query_id: string, result: InlineQueryResult): Promise<InlineMessageId> {
     const params: Record<string, Object> = {
       '@type': 'answerWebAppQuery',
       'web_app_query_id': web_app_query_id,
       'result': result,
     };
-    return this.client.execute<SentWebAppMessage>(params);
+    return this.client.execute<InlineMessageId>(params);
   }
 
   /**
@@ -6965,7 +6968,7 @@ export class TDLibApi {
    * @param topic_id 主题 ID
    * @param draft_message 草稿（null 表示删除）
    */
-  setChatDraftMessage(chat_id: number, topic_id: MessageTopic | null, draft_message: draftMessage | null): Promise<Ok> {
+  setChatDraftMessage(chat_id: number, topic_id: MessageTopic$Input | null, draft_message: draftMessage$Input | null): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setChatDraftMessage',
       'chat_id': chat_id,
@@ -7440,7 +7443,7 @@ export class TDLibApi {
    * 添加通知声音
    * @param sound 声音文件
    */
-  addSavedNotificationSound(sound: InputFile): Promise<NotificationSound> {
+  addSavedNotificationSound(sound: InputFile$Input): Promise<NotificationSound> {
     const params: Record<string, Object> = {
       '@type': 'addSavedNotificationSound',
       'sound': sound,
@@ -8524,7 +8527,7 @@ export class TDLibApi {
    * @param file_type 文件类型
    * @param priority 优先级
    */
-  preliminaryUploadFile(file: InputFile, file_type: FileType | null, priority: number): Promise<File> {
+  preliminaryUploadFile(file: InputFile$Input, file_type: FileType | null, priority: number): Promise<File> {
     const params: Record<string, Object> = {
       '@type': 'preliminaryUploadFile',
       'file': file,
@@ -8752,12 +8755,28 @@ export class TDLibApi {
    * @param sticker_format 格式
    * @param sticker 文件
    */
-  uploadStickerFile(user_id: number, sticker_format: StickerFormat, sticker: InputFile): Promise<File> {
+  uploadStickerFile(user_id: number, sticker_format: StickerFormat, sticker: InputFile$Input): Promise<File> {
     const params: Record<string, Object> = {
       '@type': 'uploadStickerFile',
       'user_id': user_id,
       'sticker_format': sticker_format,
       'sticker': sticker,
+    };
+    return this.client.execute<File>(params);
+  }
+
+  /**
+   * 上传文件
+   * @param file 文件
+   * @param file_type 文件类型
+   * @param priority 优先级
+   */
+  uploadFile(file: InputFile$Input, file_type: FileType, priority: number = 1): Promise<File> {
+    const params: Record<string, Object> = {
+      '@type': 'uploadFile',
+      'file': file,
+      'file_type': file_type,
+      'priority': priority,
     };
     return this.client.execute<File>(params);
   }
@@ -8847,7 +8866,7 @@ export class TDLibApi {
    * @param message_file 消息文件
    * @param attached_files 附件文件列表
    */
-  importMessages(chat_id: number, message_file: InputFile, attached_files: InputFile[]): Promise<Ok> {
+  importMessages(chat_id: number, message_file: InputFile$Input, attached_files: InputFile$Input[]): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'importMessages',
       'chat_id': chat_id,
@@ -9331,7 +9350,7 @@ export class TDLibApi {
    * @param call_id 通话 ID
    * @param log_file 日志文件
    */
-  sendCallLog(call_id: number, log_file: InputFile): Promise<Ok> {
+  sendCallLog(call_id: number, log_file: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'sendCallLog',
       'call_id': call_id,
@@ -10549,7 +10568,7 @@ export class TDLibApi {
    * @param is_installed 是否安装
    * @param is_archived 是否归档
    */
-  changeStickerSet(set_id: number, is_installed: boolean, is_archived: boolean): Promise<Ok> {
+  changeStickerSet(set_id: number | string, is_installed: boolean, is_archived: boolean): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'changeStickerSet',
       'set_id': set_id,
@@ -10602,7 +10621,7 @@ export class TDLibApi {
    * @param is_attached 是否附加
    * @param sticker 贴纸文件
    */
-  addRecentSticker(is_attached: boolean, sticker: InputFile): Promise<Stickers> {
+  addRecentSticker(is_attached: boolean, sticker: InputFile$Input): Promise<Stickers> {
     const params: Record<string, Object> = {
       '@type': 'addRecentSticker',
       'is_attached': is_attached,
@@ -10616,7 +10635,7 @@ export class TDLibApi {
    * @param is_attached 是否附加
    * @param sticker 贴纸文件
    */
-  removeRecentSticker(is_attached: boolean, sticker: InputFile): Promise<Ok> {
+  removeRecentSticker(is_attached: boolean, sticker: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'removeRecentSticker',
       'is_attached': is_attached,
@@ -10651,7 +10670,7 @@ export class TDLibApi {
    * 添加收藏贴纸
    * @param sticker 贴纸文件
    */
-  addFavoriteSticker(sticker: InputFile): Promise<Ok> {
+  addFavoriteSticker(sticker: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'addFavoriteSticker',
       'sticker': sticker,
@@ -10663,7 +10682,7 @@ export class TDLibApi {
    * 移除收藏贴纸
    * @param sticker 贴纸文件
    */
-  removeFavoriteSticker(sticker: InputFile): Promise<Ok> {
+  removeFavoriteSticker(sticker: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'removeFavoriteSticker',
       'sticker': sticker,
@@ -10675,7 +10694,7 @@ export class TDLibApi {
    * 获取贴纸对应的表情
    * @param sticker 贴纸文件
    */
-  getStickerEmojis(sticker: InputFile): Promise<string[]> {
+  getStickerEmojis(sticker: InputFile$Input): Promise<string[]> {
     const params: Record<string, Object> = {
       '@type': 'getStickerEmojis',
       'sticker': sticker,
@@ -10805,7 +10824,7 @@ export class TDLibApi {
    * 添加保存动画
    * @param animation 动画文件
    */
-  addSavedAnimation(animation: InputFile): Promise<Ok> {
+  addSavedAnimation(animation: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'addSavedAnimation',
       'animation': animation,
@@ -10817,7 +10836,7 @@ export class TDLibApi {
    * 移除保存动画
    * @param animation 动画文件
    */
-  removeSavedAnimation(animation: InputFile): Promise<Ok> {
+  removeSavedAnimation(animation: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'removeSavedAnimation',
       'animation': animation,
@@ -11575,12 +11594,18 @@ export class TDLibApi {
    * @param supergroup_id 超级群组 ID
    * @param join_by_request 是否需要审批
    */
-  toggleSupergroupJoinByRequest(supergroup_id: number, join_by_request: boolean): Promise<Ok> {
+  toggleSupergroupJoinByRequest(supergroup_id: number, join_by_request: boolean, guard_bot_user_id?: number, apply_to_invite_links?: boolean): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'toggleSupergroupJoinByRequest',
       'supergroup_id': supergroup_id,
       'join_by_request': join_by_request,
     };
+    if (guard_bot_user_id !== undefined) {
+      params['guard_bot_user_id'] = guard_bot_user_id;
+    }
+    if (apply_to_invite_links !== undefined) {
+      params['apply_to_invite_links'] = apply_to_invite_links;
+    }
     return this.client.execute<Ok>(params);
   }
 
@@ -11945,7 +11970,7 @@ export class TDLibApi {
    * @param is_private 是否私密
    * @param pay_for_upgrade 是否预付升级
    */
-  sendGift(gift_id: number, owner_id: MessageSender, text: FormattedText, is_private: boolean,
+  sendGift(gift_id: number | string, owner_id: MessageSender$Input, text: formattedText$Input, is_private: boolean,
     pay_for_upgrade: boolean): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'sendGift',
@@ -12568,7 +12593,7 @@ export class TDLibApi {
    * @param business_connection_id 商业连接 ID
    * @param invoice 发票消息内容
    */
-  createInvoiceLink(business_connection_id: string, invoice: InputMessageContent): Promise<string> {
+  createInvoiceLink(business_connection_id: string, invoice: MessageContent): Promise<string> {
     const params: Record<string, Object> = {
       '@type': 'createInvoiceLink',
       'business_connection_id': business_connection_id,
@@ -13750,7 +13775,7 @@ export class TDLibApi {
    * @param old_sticker 旧贴纸
    * @param new_sticker 新贴纸
    */
-  replaceStickerInSet(user_id: number, name: string, old_sticker: InputFile, new_sticker: Object): Promise<Ok> {
+  replaceStickerInSet(user_id: number, name: string, old_sticker: InputFile$Input, new_sticker: Object): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'replaceStickerInSet',
       'user_id': user_id,
@@ -13768,7 +13793,7 @@ export class TDLibApi {
    * @param thumbnail 缩略图（null 表示移除）
    * @param format 缩略图格式（null 表示移除）
    */
-  setStickerSetThumbnail(user_id: number, name: string, thumbnail: InputFile | null,
+  setStickerSetThumbnail(user_id: number, name: string, thumbnail: InputFile$Input | null,
     format: StickerFormat | null): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setStickerSetThumbnail',
@@ -13829,7 +13854,7 @@ export class TDLibApi {
    * @param sticker 贴纸
    * @param position 新位置（0-based）
    */
-  setStickerPositionInSet(sticker: InputFile, position: number): Promise<Ok> {
+  setStickerPositionInSet(sticker: InputFile$Input, position: number): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setStickerPositionInSet',
       'sticker': sticker,
@@ -13842,7 +13867,7 @@ export class TDLibApi {
    * 从集中移除贴纸
    * @param sticker 贴纸
    */
-  removeStickerFromSet(sticker: InputFile): Promise<Ok> {
+  removeStickerFromSet(sticker: InputFile$Input): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'removeStickerFromSet',
       'sticker': sticker,
@@ -13855,7 +13880,7 @@ export class TDLibApi {
    * @param sticker 贴纸
    * @param emojis 表情字符串（1-20 个）
    */
-  setStickerEmojis(sticker: InputFile, emojis: string): Promise<Ok> {
+  setStickerEmojis(sticker: InputFile$Input, emojis: string): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setStickerEmojis',
       'sticker': sticker,
@@ -13869,7 +13894,7 @@ export class TDLibApi {
    * @param sticker 贴纸
    * @param keywords 关键词列表（最多 20 个，总长 ≤ 64）
    */
-  setStickerKeywords(sticker: InputFile, keywords: string[]): Promise<Ok> {
+  setStickerKeywords(sticker: InputFile$Input, keywords: string[]): Promise<Ok> {
     const params: Record<string, Object> = {
       '@type': 'setStickerKeywords',
       'sticker': sticker,
@@ -13883,7 +13908,7 @@ export class TDLibApi {
    * @param sticker 贴纸
    * @param mask_position 遮罩位置（null 表示移除）
    */
-  setStickerMaskPosition(sticker: InputFile, mask_position: Position | null): Promise<Ok> {
+  setStickerMaskPosition(sticker: InputFile$Input, mask_position: Position | null): Promise<Ok> {
     const params = {} as Record<string, Object>;
     params['@type'] = 'setStickerMaskPosition';
     params['sticker'] = sticker;

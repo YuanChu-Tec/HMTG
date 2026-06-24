@@ -1,10 +1,11 @@
 # TDLib for HarmonyOS
 
 ## 版本信息
-- TDLib 版本: 1.8.60（libs 内含 libtdjson.so.1.8.60，用于缓解 406 UPDATE_APP_TO_LOGIN）
-- HarmonyOS API 级别: 9
-- 构建日期: 20260201
-- 包含架构: arm64-v8a、armeabi-v7a、x86_64
+- TDLib源版本: 1.8.65
+- HarmonyOS适配版本: 1.8.65-harmonyos
+- HarmonyOS API级别: 23
+- 构建日期: 20260619
+- 包含架构: arm64-v8a armeabi-v7a x86_64
 
 ## 包含的库
 - OpenSSL 1.1.1w
@@ -21,30 +22,40 @@
 
 ### CMake项目
 ```cmake
-# 在CMakeLists.txt中添加
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/tdlib-harmonyos")
+# 方法1: 使用 find_package(tdlib)（配置模式）
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/tdlib-harmonyos")
+
+# 方法2: 使用 find_package(TDLib)（模块模式）
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/tdlib-harmonyos/cmake")
+
+# 设置目标架构（必须）
+set(OHOS_ARCH_ABI "arm64-v8a")  # 可选: arm64-v8a, armeabi-v7a, x86_64
+
 find_package(tdlib REQUIRED)
 
-# 链接到你的目标
-tdlib_target_link_libraries(your_target)
+# 链接到你的目标（两种方式任选）
+target_link_libraries(your_target TDLib::TDLib)        # 推荐方式
+# tdlib_target_link_libraries(your_target)              # 兼容方式
 ```
 
 ### 手动使用
 ```bash
 # 设置环境变量
+export OHOS_ARCH_ABI=arm64-v8a  # 可选: arm64-v8a, armeabi-v7a, x86_64
 export C_INCLUDE_PATH="${TDLIB_PATH}/include:${C_INCLUDE_PATH}"
 export CPLUS_INCLUDE_PATH="${TDLIB_PATH}/include:${CPLUS_INCLUDE_PATH}"
 export LIBRARY_PATH="${TDLIB_PATH}/libs/${OHOS_ARCH_ABI}:${LIBRARY_PATH}"
 
 # 编译
-clang++ -std=c++17 -I${TDLIB_PATH}/include -L${TDLIB_PATH}/libs/arm64-v8a \
-    -ltdjson -ltdclient -lssl -lcrypto -lsqlite3 \
-    your_app.cpp -o your_app
+clang++ -std=c++17 -I${TDLIB_PATH}/include -L${TDLIB_PATH}/libs/${OHOS_ARCH_ABI} \
+    your_app.cpp -o your_app \
+    -ltdjson -ltdclient -ltdcore -ltdapi \
+    -lssl -lcrypto -lsqlite3 -lprotobuf \
+    -licuuc -licudata -licui18n \
+    -levent -levent_pthreads \
+    -lre2 -lcrc32c -lxxhash -llz4 -lsnappy \
+    -ldouble-conversion -lphonenumber
 ```
 
-## 与 HMTG 项目集成
-
-本仓库通过 **仅链接 libtdjson.so.1.8.60**（在 `entry/src/main/cpp/CMakeLists.txt` 中）与 HMTG 集成，不依赖 `libs/<abi>/cmake/` 下的 find_package(Td) 配置。若将来改用 find_package(Td)，需将 `libs/*/cmake/` 内硬编码的构建机绝对路径（如 `E:/important/tdlib-harmony-builder/install/...`）改为相对路径（如 `${CMAKE_CURRENT_LIST_DIR}/../..`），否则在其他机器或 CI 上会链接失败。
-
 ## 许可证
-各库有其自己的许可证，请参考各库的 LICENSE 文件。
+各库有其自己的许可证，请参考各库的LICENSE文件。

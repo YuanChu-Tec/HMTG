@@ -1,6 +1,5 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { worker, MessageEvents } from '@kit.ArkTS';
-import type { TdObject } from '../../api/factory/tdlib-types';
 import { getTdLibParameters } from '../../config/TelegramConfig';
 import { common } from '@kit.AbilityKit';
 import { TDLibReceiver } from './TDLibReceiver';

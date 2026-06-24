@@ -165,16 +165,6 @@ set_target_properties(absl::crc_cord_state PROPERTIES
 list(APPEND _cmake_import_check_targets absl::crc_cord_state )
 list(APPEND _cmake_import_check_files_for_absl::crc_cord_state "${_IMPORT_PREFIX}/lib/libabsl_crc_cord_state.a" )
 
-# Import target "absl::borrowed_fixup_buffer" for configuration "Release"
-set_property(TARGET absl::borrowed_fixup_buffer APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
-set_target_properties(absl::borrowed_fixup_buffer PROPERTIES
-  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
-  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libabsl_borrowed_fixup_buffer.a"
-  )
-
-list(APPEND _cmake_import_check_targets absl::borrowed_fixup_buffer )
-list(APPEND _cmake_import_check_files_for_absl::borrowed_fixup_buffer "${_IMPORT_PREFIX}/lib/libabsl_borrowed_fixup_buffer.a" )
-
 # Import target "absl::stacktrace" for configuration "Release"
 set_property(TARGET absl::stacktrace APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(absl::stacktrace PROPERTIES
@@ -755,6 +745,16 @@ set_target_properties(absl::statusor PROPERTIES
 list(APPEND _cmake_import_check_targets absl::statusor )
 list(APPEND _cmake_import_check_files_for_absl::statusor "${_IMPORT_PREFIX}/lib/libabsl_statusor.a" )
 
+# Import target "absl::status_builder" for configuration "Release"
+set_property(TARGET absl::status_builder APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(absl::status_builder PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libabsl_status_builder.a"
+  )
+
+list(APPEND _cmake_import_check_targets absl::status_builder )
+list(APPEND _cmake_import_check_files_for_absl::status_builder "${_IMPORT_PREFIX}/lib/libabsl_status_builder.a" )
+
 # Import target "absl::strings" for configuration "Release"
 set_property(TARGET absl::strings APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(absl::strings PROPERTIES
@@ -914,6 +914,26 @@ set_target_properties(absl::time_zone PROPERTIES
 
 list(APPEND _cmake_import_check_targets absl::time_zone )
 list(APPEND _cmake_import_check_files_for_absl::time_zone "${_IMPORT_PREFIX}/lib/libabsl_time_zone.a" )
+
+# Import target "absl::clock_interface" for configuration "Release"
+set_property(TARGET absl::clock_interface APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(absl::clock_interface PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libabsl_clock_interface.a"
+  )
+
+list(APPEND _cmake_import_check_targets absl::clock_interface )
+list(APPEND _cmake_import_check_files_for_absl::clock_interface "${_IMPORT_PREFIX}/lib/libabsl_clock_interface.a" )
+
+# Import target "absl::source_location" for configuration "Release"
+set_property(TARGET absl::source_location APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(absl::source_location PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libabsl_source_location.a"
+  )
+
+list(APPEND _cmake_import_check_targets absl::source_location )
+list(APPEND _cmake_import_check_files_for_absl::source_location "${_IMPORT_PREFIX}/lib/libabsl_source_location.a" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)

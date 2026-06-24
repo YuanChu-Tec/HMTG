@@ -30,8 +30,6 @@ endmacro()
 
 include(CMakeFindDependencyMacro)
 
-set_and_check(re2_INCLUDE_DIR ${PACKAGE_PREFIX_DIR}/include)
-
 if(UNIX)
   set(THREADS_PREFER_PTHREAD_FLAG ON)
   find_dependency(Threads REQUIRED)

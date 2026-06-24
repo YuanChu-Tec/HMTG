@@ -5,8 +5,8 @@
 import { AuthService } from '../services/core';
 import { TdApiFactory } from '../services/api/factory/TdApiFactory';
 import { TDLibApi } from '../services/api/TDLibApi';
-import type { Ok } from '../services/api/factory/tdlib-types';
-import { LoadingIndicator } from '../ui_kit/components/common/LoadingIndicator';
+import type { Ok, AuthorizationState } from '../services/api/factory/tdlib-types';
+import { LoadingIndicator } from '../ui_kit/components/LoadingIndicator';
 import { router, promptAction } from '@kit.ArkUI';
 import { logPageInfo, logPageError } from '../utils/log/LogService';
 import { RoutePaths } from '../utils/navigation/NavigationHelper';
@@ -67,8 +67,8 @@ export struct AuthBotTokenPage {
     logPageInfo(TAG, 'handleLogin: importBotAuthorization');
     this.isLoading = true;
     try {
-      const result = await this.tdApi.importBotAuthorization(trimmed);
-      const resultType = result['_'];
+      const result: AuthorizationState = await this.tdApi.importBotAuthorization(trimmed);
+      const resultType: string = result._;
       logPageInfo(TAG, `handleLogin: result type=${resultType}`);
       if (resultType === 'authorizationStateReady') {
         promptAction.showToast({ message: '登录成功', duration: 2000 });

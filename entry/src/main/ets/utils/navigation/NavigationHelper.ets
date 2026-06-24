@@ -211,7 +211,7 @@ export class RoutePaths {
   public static readonly CHAT_LIST = 'pages/chat/ChatListPage';
 
   /** 通用聊天详情页（支持私聊/群组/频道/Bot） */
-  public static readonly CHAT_DETAIL = 'pages/common/ChatPage';
+  public static readonly CHAT_DETAIL = 'pages/ChatPage';
 
   /** 聊天信息页 */
   public static readonly CHAT_INFO = 'pages/chat/secondpage/ChatInfoPage';
@@ -358,7 +358,7 @@ export class RoutePaths {
 
   // ============ Bots机器人模块 ============
   /** 机器人聊天页（使用通用 ChatPage） */
-  public static readonly BOT_CHAT = 'pages/common/ChatPage';
+  public static readonly BOT_CHAT = 'pages/ChatPage';
 
   /** 机器人命令页 */
   public static readonly BOT_COMMANDS = 'pages/bots/BotCommandsPage';

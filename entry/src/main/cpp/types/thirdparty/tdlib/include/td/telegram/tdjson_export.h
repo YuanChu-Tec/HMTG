@@ -33,7 +33,6 @@
 #  define TDJSON_DEPRECATED_NO_EXPORT TDJSON_NO_EXPORT TDJSON_DEPRECATED
 #endif
 
-/* NOLINTNEXTLINE(readability-avoid-unconditional-preprocessor-if) */
 #if 0 /* DEFINE_NO_DEPRECATED */
 #  ifndef TDJSON_NO_DEPRECATED
 #    define TDJSON_NO_DEPRECATED

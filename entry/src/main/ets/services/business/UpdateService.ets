@@ -194,14 +194,14 @@ export class UpdateService {
   private onUpdateNewMessage(update: Record<string, Object>): void {
     this.coreService.onUpdateNewMessage(update);
   }
-  private onUpdateMessageSendSucceeded(update: Record<string, Object>): void {
-    this.coreService.onUpdateMessageSendSucceeded(update);
+  private async onUpdateMessageSendSucceeded(update: Record<string, Object>): Promise<void> {
+    await this.coreService.onUpdateMessageSendSucceeded(update);
   }
   private onUpdateMessageSendFailed(update: Record<string, Object>): void {
     this.coreService.onUpdateMessageSendFailed(update);
   }
-  private onUpdateMessageContent(update: Record<string, Object>): void {
-    this.coreService.onUpdateMessageContent(update);
+  private async onUpdateMessageContent(update: Record<string, Object>): Promise<void> {
+    await this.coreService.onUpdateMessageContent(update);
   }
   private onUpdateMessageEdited(update: Record<string, Object>): void {
     this.coreService.onUpdateMessageEdited(update);
@@ -248,8 +248,8 @@ export class UpdateService {
   private onUpdateChatReadOutbox(update: Record<string, Object>): void {
     this.coreService.onUpdateChatReadOutbox(update);
   }
-  private onUpdateChatTitle(update: Record<string, Object>): void {
-    this.coreService.onUpdateChatTitle(update);
+  private async onUpdateChatTitle(update: Record<string, Object>): Promise<void> {
+    await this.coreService.onUpdateChatTitle(update);
   }
   private onUpdateChatPhoto(update: Record<string, Object>): void {
     this.coreService.onUpdateChatPhoto(update);
@@ -260,8 +260,8 @@ export class UpdateService {
   private onUpdateChatThemes(update: Record<string, Object>): void {
     this.coreService.onUpdateChatThemes(update);
   }
-  private onUpdateChatDraftMessage(update: Record<string, Object>): void {
-    this.coreService.onUpdateChatDraftMessage(update);
+  private async onUpdateChatDraftMessage(update: Record<string, Object>): Promise<void> {
+    await this.coreService.onUpdateChatDraftMessage(update);
   }
   private onUpdateChatIsPinned(update: Record<string, Object>): void {
     this.coreService.onUpdateChatIsPinned(update);
@@ -278,8 +278,8 @@ export class UpdateService {
   private onUpdateChatMessageTtl(update: Record<string, Object>): void {
     this.coreService.onUpdateChatMessageTtl(update);
   }
-  private onUpdateChatNotificationSettings(update: Record<string, Object>): void {
-    this.coreService.onUpdateChatNotificationSettings(update);
+  private async onUpdateChatNotificationSettings(update: Record<string, Object>): Promise<void> {
+    await this.coreService.onUpdateChatNotificationSettings(update);
   }
   private onUpdateChatActionBar(update: Record<string, Object>): void {
     this.coreService.onUpdateChatActionBar(update);

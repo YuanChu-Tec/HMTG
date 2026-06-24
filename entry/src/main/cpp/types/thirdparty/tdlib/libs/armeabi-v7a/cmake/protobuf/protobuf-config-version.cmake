@@ -1,4 +1,4 @@
-set(PACKAGE_VERSION "33.4.0")
+set(PACKAGE_VERSION "3.21.12.0")
 set(${PACKAGE_FIND_NAME}_VERSION_PRERELEASE "" PARENT_SCOPE)
 
 # Prerelease versions cannot be passed in directly via the find_package command,
@@ -18,7 +18,7 @@ endif()
 set(PACKAGE_VERSION_COMPATIBLE TRUE) #Assume true until shown otherwise
 
 if(PACKAGE_FIND_VERSION) #Only perform version checks if one is given
-  if(NOT PACKAGE_FIND_VERSION_MAJOR EQUAL "6")
+  if(NOT PACKAGE_FIND_VERSION_MAJOR EQUAL "3")
     set(PACKAGE_VERSION_COMPATIBLE FALSE)
   elseif(PACKAGE_FIND_VERSION VERSION_GREATER PACKAGE_VERSION)
     set(PACKAGE_VERSION_COMPATIBLE FALSE)
@@ -44,12 +44,9 @@ macro(_check_and_save_build_option OPTION VALUE)
   endif()
   set(${PACKAGE_FIND_NAME}_${OPTION} ${VALUE} PARENT_SCOPE)
 endmacro()
-
-if(PACKAGE_VERSION_COMPATIBLE)
-    _check_and_save_build_option(WITH_ZLIB ON)
-    _check_and_save_build_option(MSVC_STATIC_RUNTIME ON)
-    _check_and_save_build_option(BUILD_SHARED_LIBS OFF)
-endif()
+_check_and_save_build_option(WITH_ZLIB ON)
+_check_and_save_build_option(MSVC_STATIC_RUNTIME ON)
+_check_and_save_build_option(BUILD_SHARED_LIBS OFF)
 
 # if the installed or the using project don't have CMAKE_SIZEOF_VOID_P set, ignore it:
 if(CMAKE_SIZEOF_VOID_P AND "4")

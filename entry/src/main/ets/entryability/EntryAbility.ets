@@ -138,13 +138,10 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(0x0001, TAG, 'EntryAbility onWindowStageCreate');
   
-    // ⭐ 获取并存储安全区高度（必须在配置窗口之后）
-    this.getAndStoreSafeAreaHeight(windowStage);
-  
-    // 配置窗口属性
+    // 配置窗口属性（全屏布局等）
     this.configureWindow(windowStage);
   
-    // ⭐ 立即开始预加载 Lottie 动画（不阻塞，但尽早开始）
+    // ⭐ 立即开始预加载资源（不阻塞，但尽早开始）
     this.earlyPreloadResources();
   
     // 加载主页面
@@ -156,37 +153,6 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(0x0001, TAG, 'Succeeded in loading content.');
     });
-  }
-
-  /**
-   * ⭐ 获取安全区高度并存储到 AppStorage
-   * 参考 JMComic EntryAbility 实现
-   */
-  private getAndStoreSafeAreaHeight(windowStage: window.WindowStage): void {
-    try {
-      windowStage.getMainWindow((err: BusinessError, windowClass: window.Window) => {
-        let errCode: number = err.code;
-        if (errCode) {
-          hilog.error(DOMAIN, TAG, 'Failed to obtain the main window. Cause: ' + JSON.stringify(err));
-          return;
-        }
-
-        // 获取状态栏区域高度
-        let notificationArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
-        let topHeight = px2vp(notificationArea.topRect.height);
-        AppStorage.setOrCreate('topSafeHeight', topHeight);
-
-        // 获取导航栏区域高度
-        let navigationArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
-        let bottomHeight = px2vp(navigationArea.bottomRect.height);
-        AppStorage.setOrCreate('bottomSafeHeight', bottomHeight);
-
-        hilog.info(DOMAIN, TAG, `topSafeHeight=${topHeight}, bottomSafeHeight=${bottomHeight}`);
-      });
-    } catch (error) {
-      const err = error as Error;
-      hilog.error(DOMAIN, TAG, `Failed to get safe area height: ${err.message}`);
-    }
   }
 
   /**
@@ -306,6 +272,9 @@ export default class EntryAbility extends UIAbility {
       // 设置窗口布局全屏（沉浸式体验核心）
       mainWindow.setWindowLayoutFullScreen(true);
 
+      // 启用系统状态栏和导航栏
+      mainWindow.setWindowSystemBarEnable(['status', 'navigation']);
+
       // 配置系统栏（状态栏和导航栏）属性
       // 状态栏透明，导航栏透明，支持沉浸式效果
       interface SystemBarProps {
@@ -321,12 +290,6 @@ export default class EntryAbility extends UIAbility {
         navigationBarContentColor: '#000000'  // 导航栏图标黑色
       };
       mainWindow.setWindowSystemBarProperties(sysBarProps);
-
-      // 设置系统栏启用状态
-      mainWindow.setWindowSystemBarEnable(['status', 'navigation']);
-
-      // 配置窗口布局避让区域（安全区）
-      mainWindow.setWindowLayoutFullScreen(true);
 
       // 注意：不在这里设置背景色，避免窗口未就绪时的错误
       // 背景色由页面组件自行设置

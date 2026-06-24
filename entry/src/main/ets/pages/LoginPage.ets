@@ -3,13 +3,13 @@
  * 整合手机号、验证码、密码登录流程，参考 Telegram LoginActivity
  */
 
-import { router, promptAction } from '@kit.ArkUI';
+import { router, promptAction, window } from '@kit.ArkUI';
 import { emitter } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { AuthService, TDLibClient } from '../services/core';
 import { TdApiFactory, TDLibApi } from '../services/api';
 import { AuthState } from '../models';
-import { PhoneInputComponent } from '../components/auth';
+import { PhoneInputComponent } from '../ui_kit/components/PhoneInputComponent';
 import { CountryInfo, CountryCodeHelper } from '../utils/CountryCodeHelper';
 import { getAuthErrorDisplayMessage, AUTH_ERROR_SILENT, getAuthErrorLocaleKey } from '../utils/AuthErrorHelper';
 import { getString, formatString } from '../utils/i18n/ResourceHelper';
@@ -165,9 +165,8 @@ export struct LoginPage {
     logPageInfo(TAG, 'aboutToAppear');
     this.hasNavigated = false;
     
-    // ⭐ 安全区高度 - 读取初始值（EntryAbility 会先设置好这些值）
-    this.topSafeHeight = AppStorage.get<number>('topSafeHeight') ?? 0;
-    this.bottomSafeHeight = AppStorage.get<number>('bottomSafeHeight') ?? 0;
+    // ⭐ 动态获取安全区高度
+    this.loadSafeAreaHeight();
     
     // 淡入动画
     setTimeout(() => {
@@ -186,6 +185,31 @@ export struct LoginPage {
     
     // 检查是否已经处于等待验证码状态
     await this.checkAlreadyWaitingState();
+  }
+
+  /**
+   * 动态获取安全区高度（状态栏 + 导航条），替代已删除的 EntryAbility 分发
+   */
+  private loadSafeAreaHeight(): void {
+    try {
+      const win = window.getLastWindow(getContext(this));
+      win.then((windowClass: window.Window) => {
+        const systemArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
+        if (systemArea && systemArea.topRect) {
+          this.topSafeHeight = px2vp(systemArea.topRect.height);
+        }
+        const navArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
+        if (navArea && navArea.bottomRect) {
+          this.bottomSafeHeight = px2vp(navArea.bottomRect.height);
+        }
+      }).catch(() => {
+        this.topSafeHeight = 24;
+        this.bottomSafeHeight = 0;
+      });
+    } catch (e) {
+      this.topSafeHeight = 24;
+      this.bottomSafeHeight = 0;
+    }
   }
 
   aboutToDisappear(): void {
@@ -302,14 +326,16 @@ export struct LoginPage {
       const data = payload['data'] as Record<string, Object> | undefined;
       const state = data ? (data['state'] as string) : '';
       
-      if (state === AuthState.WAITING_PASSWORD) {
-        logPageInfo(TAG, 'Received WAITING_PASSWORD state');
+      if (state === 'authorizationStateWaitPassword') {
+        logPageInfo(TAG, 'Received authorizationStateWaitPassword state');
+        // 关闭二维码弹窗
+        this.showQrCodeDialog = false;
         this.isCodeLoading = false;
         this.loadPasswordHint().then(() => {
           this.currentView = LoginView.VIEW_PASSWORD_INPUT;
         });
-      } else if (state === AuthState.READY) {
-        logPageInfo(TAG, 'Received READY state, navigate to Main');
+      } else if (state === 'authorizationStateReady') {
+        logPageInfo(TAG, 'Received authorizationStateReady state, navigate to Main');
         // 关闭二维码弹窗
         this.showQrCodeDialog = false;
         this.navigateToMain();
