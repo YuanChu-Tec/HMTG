@@ -4,7 +4,7 @@ import type { FormattedText, birthdate } from '../services/api/factory/tdlib-typ
 import { EventBus } from '../utils/event/EventBus';
 import { LogService } from '../utils/log/LogService';
 import { ErrorHandler } from '../utils/error/ErrorHandler';
-import { picker } from '@kit.CoreFileKit';
+import { picker, fileIo as fs } from '@kit.CoreFileKit';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { QRCodeGenerator } from '../utils/QRCodeGenerator';
 import { image } from '@kit.ImageKit';
@@ -87,9 +87,10 @@ export class ProfilePageViewModel {
       let profilePhoto = this.extractProfilePhotoJson(fullUserInfo) || '';
       const originalProfilePhoto = profilePhoto;
 
-      // ⭐ 处理头像路径，确保格式正确
-      if (profilePhoto && !profilePhoto.startsWith('file://') && profilePhoto.startsWith('/')) {
-        profilePhoto = 'file://' + profilePhoto;
+      // ⭐ 处理头像路径：HarmonyOS Image 组件直接接受绝对路径，不需要 file:// 前缀
+      // 移除可能存在的 file:// 前缀
+      if (profilePhoto && profilePhoto.startsWith('file://')) {
+        profilePhoto = profilePhoto.substring(7);
       }
       hilog.info(0x0001, 'ProfileVM', `⭐ Avatar path: "${originalProfilePhoto}" -> "${profilePhoto}", fileId: ${this.currentAvatarFileId}`);
 
@@ -264,14 +265,35 @@ export class ProfilePageViewModel {
           this.currentAvatarFileId = fileId;
           hilog.info(0x0001, 'ProfileVM', `Extracted avatar fileId: ${fileId}`);
 
-          // 如果没有本地路径，触发异步下载
-          if (!local?.path) {
+          // ⭐ 如果有本地路径，先检查文件是否真实存在
+          if (local?.path) {
+            let path = local.path as string;
+            let checkPath = path;
+            if (checkPath.startsWith('file://')) {
+              checkPath = checkPath.substring(7);
+            }
+            try {
+              const stat = fs.statSync(checkPath);
+              hilog.info(0x0001, 'ProfileVM', `Avatar file exists: ${checkPath}, size: ${stat.size}`);
+            } catch {
+              hilog.info(0x0001, 'ProfileVM', `Avatar file not found at ${checkPath}, triggering download`);
+              this.triggerAvatarDownload(fileId);
+              return '';
+            }
+          } else {
+            // 如果没有本地路径，触发异步下载
             hilog.info(0x0001, 'ProfileVM', `Avatar not cached, triggering download for fileId: ${fileId}`);
             this.triggerAvatarDownload(fileId);
           }
         }
 
-        if (local?.path) return local.path as string;
+        if (local?.path) {
+          let path = local.path as string;
+          if (!path.startsWith('file://')) {
+            path = 'file://' + path;
+          }
+          return path;
+        }
       }
       return '';
     } catch {
@@ -280,21 +302,57 @@ export class ProfilePageViewModel {
   }
 
   /**
-   * ⭐ 触发头像异步下载
+   * ⭐ 触发头像异步下载（通过 CoreService）
    */
   private triggerAvatarDownload(fileId: number): void {
     if (this.isAvatarDownloading) return;
 
     this.isAvatarDownloading = true;
-    hilog.info(0x0001, 'ProfileVM', `Triggering avatar download for current user, fileId: ${fileId}`);
+    hilog.info(0x0001, 'ProfileVM', `Triggering avatar download directly via FileDownloadService, fileId: ${fileId}`);
 
     this.fileDownloadService.downloadFile(
       fileId,
       FileType.PROFILE_PHOTO,
-      DownloadPriority.HIGH
-    ).then((path: string) => {
+      DownloadPriority.URGENT
+    ).then(async (path: string) => {
       hilog.info(0x0001, 'ProfileVM', `✅ Avatar downloaded: ${path}`);
-      // 下载完成后，updateFile 事件会触发 handleFileUpdate 刷新 UI
+      
+      // ⭐ 检查文件是否存在
+      let finalPath = path;
+      if (finalPath.startsWith('file://')) {
+        finalPath = finalPath.substring(7);
+      }
+      
+      try {
+        const stat = await fs.stat(finalPath);
+        hilog.info(0x0001, 'ProfileVM', `✅ File exists: ${finalPath}, size: ${stat.size} bytes`);
+      } catch (statErr) {
+        hilog.warn(0x0001, 'ProfileVM', `⚠️ File does not exist: ${finalPath}, error: ${JSON.stringify(statErr)}`);
+        // 文件不存在，不更新头像路径
+        this.isAvatarDownloading = false;
+        return;
+      }
+      
+      let displayPath = finalPath;
+      if (!displayPath.startsWith('file://')) {
+        displayPath = 'file://' + displayPath;
+      }
+      
+      if (this.userInfo) {
+        hilog.info(0x0001, 'ProfileVM', `✅ Updating userInfo.profilePhoto to: ${displayPath}`);
+        this.userInfo = {
+          id: this.userInfo.id,
+          firstName: this.userInfo.firstName,
+          lastName: this.userInfo.lastName,
+          username: this.userInfo.username,
+          phoneNumber: this.userInfo.phoneNumber,
+          profilePhoto: displayPath,
+          bio: this.userInfo.bio,
+          birthday: this.userInfo.birthday || '',
+          statusText: this.userInfo.statusText,
+          isOnline: this.userInfo.isOnline
+        };
+      }
       this.isAvatarDownloading = false;
     }).catch((err: Error) => {
       hilog.warn(0x0001, 'ProfileVM', `⚠️ Avatar download failed: ${err.message}`);
@@ -307,7 +365,7 @@ export class ProfilePageViewModel {
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
     this.eventBus.on('core:userUpdated', this.handleCoreUserUpdate.bind(this));
     this.eventBus.on('core:userFullInfoUpdated', this.handleCoreUserFullInfo.bind(this));
-    this.eventBus.on('core:avatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.on('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
     this.eventBus.on('core:optionUpdated', this.handleCoreOptionUpdated.bind(this));
     this.eventBus.on('core:passwordStateUpdated', this.handleCorePasswordStateUpdated.bind(this));
@@ -317,7 +375,7 @@ export class ProfilePageViewModel {
   private unregisterEventListeners(): void {
     this.eventBus.off('core:userUpdated', this.handleCoreUserUpdate.bind(this));
     this.eventBus.off('core:userFullInfoUpdated', this.handleCoreUserFullInfo.bind(this));
-    this.eventBus.off('core:avatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.off('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.off('core:optionUpdated', this.handleCoreOptionUpdated.bind(this));
     this.eventBus.off('core:passwordStateUpdated', this.handleCorePasswordStateUpdated.bind(this));
     this.eventBus.off('core:connectedWebsitesUpdated', this.handleCoreConnectedWebsitesUpdated.bind(this));
@@ -358,10 +416,10 @@ export class ProfilePageViewModel {
     
     hilog.info(0x0001, 'ProfileVM', `Avatar downloaded via core:avatarDownloaded: ${path}`);
     
+    // ⭐ 移除 file:// 前缀（如果存在）
     let photoPath = path;
-    // ⭐ 处理头像路径，确保格式正确
-    if (photoPath && !photoPath.startsWith('file://') && photoPath.startsWith('/')) {
-      photoPath = 'file://' + photoPath;
+    if (photoPath.startsWith('file://')) {
+      photoPath = photoPath.substring(7);
     }
     
     this.userInfo = {

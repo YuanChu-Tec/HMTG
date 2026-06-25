@@ -135,8 +135,8 @@ export interface SystemMessageParams {
 export enum DownloadPriority {
   LOW = 1,
   NORMAL = 16,
-  HIGH = 32,
-  URGENT = 64 // ⭐ 最高优先级，用于头像等需要立即显示的内容
+  HIGH = 24,
+  URGENT = 32
 }
 
 export enum DownloadStatus {

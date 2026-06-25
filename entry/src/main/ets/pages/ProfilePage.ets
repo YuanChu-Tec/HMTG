@@ -13,7 +13,7 @@ const BOTTOM_PADDING = 80;
 @Entry
 @ComponentV2
 export struct ProfilePage {
-  private viewModel: ProfilePageViewModel = new ProfilePageViewModel();
+  @Local viewModel: ProfilePageViewModel = new ProfilePageViewModel();
   @Local topSafeHeight: number = 0;
 
   // ==================== 辅助方法 ====================
@@ -63,28 +63,14 @@ export struct ProfilePage {
   @Builder
   private buildTopArea() {
     Column() {
-      Stack() {
-        // 头像路径已在 ViewModel 层处理，直接使用
-        if (this.viewModel.userInfo?.profilePhoto) {
-          Image(this.viewModel.userInfo.profilePhoto)
-            .width(80)
-            .height(80)
-            .borderRadius(40)
-            .objectFit(ImageFit.Cover)
-            .onError(() => {
-              hilog.warn(DOMAIN, TAG, 'Failed to load profile photo');
-            })
-        } else {
-          // ⭐ 默认头像：无论 userInfo 是否存在，都显示彩色圆形背景 + 首字母
-          Stack() {
-            Circle().width(80).height(80).fill(this.getAvatarColor(`${this.viewModel.userInfo?.firstName || ''} ${this.viewModel.userInfo?.lastName || ''}`))
-            Text(`${this.viewModel.userInfo?.firstName || ''} ${this.viewModel.userInfo?.lastName || ''}`.trim().charAt(0).toUpperCase() || '?')
-              .fontSize(40)
-              .fontColor(Color.White)
-              .fontWeight(FontWeight.Bold)
-          }
-        }
-      }
+      Avatar({
+        source: this.viewModel.userInfo?.profilePhoto ?? '',
+        name: `${this.viewModel.userInfo?.firstName || ''} ${this.viewModel.userInfo?.lastName || ''}`.trim() || '用户',
+        avatarSize: 80,
+        fontSize: 40,
+        avatarBackgroundColor: this.getAvatarColor(`${this.viewModel.userInfo?.firstName || ''} ${this.viewModel.userInfo?.lastName || ''}`.trim() || '用户'),
+        radius: 40
+      })
         .margin({ top: 12, bottom: 12 })
 
       Text(`${this.viewModel.userInfo?.firstName || ''} ${this.viewModel.userInfo?.lastName || ''}`.trim())

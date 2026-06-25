@@ -45,7 +45,7 @@ interface SettingGroup {
 @Entry
 @ComponentV2
 export struct SettingsPage {
-  private viewModel: SettingsViewModel = new SettingsViewModel();
+  @Local viewModel: SettingsViewModel = new SettingsViewModel();
   @Local currentLanguage: string = '简体中文（beta）';
   @Local topSafeHeight: number = 0;
 
@@ -280,28 +280,14 @@ export struct SettingsPage {
   @Builder
   private buildUserCard() {
     Column() {
-      Stack() {
-        // 头像路径已在 ViewModel 层处理，直接使用
-        if (this.viewModel.userInfo?.avatarPath) {
-          Image(this.viewModel.userInfo.avatarPath)
-            .width(80)
-            .height(80)
-            .borderRadius(40)
-            .objectFit(ImageFit.Cover)
-            .onError(() => {
-              hilog.warn(DOMAIN, TAG, 'Failed to load user avatar');
-            })
-        } else {
-          // ⭐ 默认头像：无论 userInfo 是否存在，都显示彩色圆形背景 + 首字母
-          Stack() {
-            Circle().width(80).height(80).fill(this.getAvatarColor(this.viewModel.userInfo?.fullName || '用户'))
-            Text((this.viewModel.userInfo?.avatarInitials || '用户').charAt(0).toUpperCase() || '?')
-              .fontSize(32)
-              .fontColor(Color.White)
-              .fontWeight(FontWeight.Bold)
-          }
-        }
-      }
+      Avatar({
+        source: this.viewModel.userInfo?.avatarPath ?? '',
+        name: this.viewModel.userInfo?.fullName || '用户',
+        avatarSize: 80,
+        fontSize: 32,
+        avatarBackgroundColor: this.getAvatarColor(this.viewModel.userInfo?.fullName || '用户'),
+        radius: 40
+      })
         .margin({ bottom: 12 })
 
       Text(this.viewModel.userInfo?.fullName || '用户')

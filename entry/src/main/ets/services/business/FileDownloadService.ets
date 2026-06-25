@@ -113,7 +113,7 @@ export class FileDownloadService {
   private readonly CURRENT_CHAT_PRIORITY_BOOST = 10; // 当前聊天任务的优先级加成
   
   // ⭐ 头像下载特殊优先级（最高优先级，确保头像最先下载）
-  private readonly AVATAR_PRIORITY_BOOST = 100; // 头像下载的额外优先级加成
+  private readonly AVATAR_PRIORITY_BOOST = 5; // 头像下载的额外优先级加成
   private readonly MAX_CONCURRENT_AVATAR_DOWNLOADS = 2; // 头像下载专用并发槽位
 
   private constructor(context: common.Context) {
@@ -162,8 +162,9 @@ export class FileDownloadService {
     
     // 1. 提升队列中当前聊天任务的优先级
     for (const task of this.downloadQueue) {
-      if (task.chatId === chatId && task.priority < DownloadPriority.HIGH + this.CURRENT_CHAT_PRIORITY_BOOST) {
-        task.priority += this.CURRENT_CHAT_PRIORITY_BOOST;
+      if (task.chatId === chatId && task.priority < DownloadPriority.URGENT) {
+        const newPriority = task.priority + this.CURRENT_CHAT_PRIORITY_BOOST;
+        task.priority = Math.min(newPriority, DownloadPriority.URGENT);
         reprioritizedCount++;
       }
     }
@@ -784,13 +785,15 @@ export class FileDownloadService {
     
     // ⭐ 头像下载特殊处理：给予最高优先级
     if (task.type === FileType.PROFILE_PHOTO) {
-      task.priority += this.AVATAR_PRIORITY_BOOST;
+      const newPriority = task.priority + this.AVATAR_PRIORITY_BOOST;
+      task.priority = Math.min(newPriority, DownloadPriority.URGENT);
       hilog.debug(0x0001, TAG, `Avatar task ${task.id} boosted to priority ${task.priority}`);
     }
     
     // ⭐ 如果任务属于当前活跃聊天，提升优先级
-    if (task.chatId && task.chatId === this.currentActiveChatId) {
-      task.priority += this.CURRENT_CHAT_PRIORITY_BOOST;
+    if (task.chatId && task.chatId === this.currentActiveChatId && task.priority < DownloadPriority.URGENT) {
+      const newPriority = task.priority + this.CURRENT_CHAT_PRIORITY_BOOST;
+      task.priority = Math.min(newPriority, DownloadPriority.URGENT);
       hilog.debug(0x0001, TAG, `Priority boosted for task ${task.id} in active chat ${task.chatId}`);
     }
     

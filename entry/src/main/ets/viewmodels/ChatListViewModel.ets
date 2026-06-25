@@ -712,10 +712,8 @@ export class ChatListViewModel {
     const senderName = chat.lastMessage?.senderName;
     const isOutgoing = chat.lastMessage?.isOutgoing;
 
-    // ⭐ 处理头像路径，确保格式正确
     let avatarPath = chat.avatar || '';
-    if (avatarPath && !avatarPath.startsWith('file://') && avatarPath.startsWith('/')) {
-      // 添加 file:// 前缀
+    if (avatarPath && !avatarPath.startsWith('file://')) {
       avatarPath = 'file://' + avatarPath;
     }
     hilog.info(DOMAIN, TAG, `Chat ${chat.id} (${chat.title}) avatar: "${chat.avatar || 'empty'}" -> "${avatarPath}"`);

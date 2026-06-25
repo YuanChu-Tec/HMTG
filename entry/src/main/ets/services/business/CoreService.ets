@@ -1616,7 +1616,7 @@ export class CoreService {
       return cached;
     }
 
-    // 2. 从数据库获取
+    // 2. 从数据库获取（只获取基本信息，头像需要从 TDLib 获取）
     if (this.cacheStorage) {
       try {
         const dbUser = await this.cacheStorage.getUserWithCache(userId);
@@ -1627,14 +1627,10 @@ export class CoreService {
             isBot: dbUser.isBot,
             isPremium: dbUser.isPremium
           };
-          // 尝试获取头像路径
-          if (dbUser.profilePhotoFileId) {
-            // 头像路径需要从本地文件系统获取，这里简化处理
-            userInfo.avatar = dbUser.profilePhotoFileId;
-          }
+          // 数据库只存储了文件ID，需要从 TDLib 获取实际头像路径
+          // 所以这里先缓存基本信息，然后继续从 TDLib 获取头像
           this.userCache.set(userId, userInfo);
-          hilog.debug(0x0001, 'CoreService', `User ${userId} loaded from database`);
-          return userInfo;
+          hilog.debug(0x0001, 'CoreService', `User ${userId} basic info loaded from database, fetching avatar from TDLib...`);
         }
       } catch (error) {
         hilog.warn(0x0001, 'CoreService', `Failed to load user ${userId} from database: ${JSON.stringify(error)}`);
@@ -1667,7 +1663,9 @@ export class CoreService {
             const local = small['local'] as Record<string, Object> | undefined;
             if (local) {
               const localPath = (local['path'] as string) || '';
-              userInfo.avatar = localPath;
+              if (localPath && localPath.length > 0) {
+                userInfo.avatar = localPath.startsWith('file://') ? localPath : 'file://' + localPath;
+              }
               
               // ⭐ 如果本地没有头像但有 fileId，触发异步下载
               if (!localPath && fileId && fileId > 0) {
@@ -2485,7 +2483,7 @@ export class CoreService {
    * 优化：传入当前活跃聊天 ID，让该聊天的头像下载获得优先级加成
    * 优化2：使用最高优先级确保头像优先下载
    */
-  private triggerUserAvatarDownload(fileId: number, userId: number): void {
+  public triggerUserAvatarDownload(fileId: number, userId: number): void {
     try {
       // 延迟初始化 FileDownloadService
       if (!this.fileDownloadService) {
@@ -2514,17 +2512,20 @@ export class CoreService {
       ).then(async (path: string) => {
         hilog.info(0x0001, 'CoreService', `✅ User avatar downloaded for user ${userId}: ${path}`);
         
+        // ⭐ 添加 file:// 前缀
+        const avatarPath = path.startsWith('file://') ? path : 'file://' + path;
+        
         // ⭐ 更新用户缓存中的头像路径
         const cachedUser = this.userCache.get(userId);
         if (cachedUser) {
-          cachedUser.avatar = path;
-          hilog.info(0x0001, 'CoreService', `✅ Updated avatar path in user cache for user ${userId}: ${path}`);
+          cachedUser.avatar = avatarPath;
+          hilog.info(0x0001, 'CoreService', `✅ Updated avatar path in user cache for user ${userId}: ${avatarPath}`);
         }
         
         // ⭐ 发送用户头像下载完成事件，通知 ViewModel 刷新
         const userAvatarEventData: Record<string, Object> = new Object() as Record<string, Object>;
         userAvatarEventData['fileId'] = fileId as Object;
-        userAvatarEventData['path'] = path as Object;
+        userAvatarEventData['path'] = avatarPath as Object;
         userAvatarEventData['userId'] = userId as Object;
         eventBus.emit('core:userAvatarDownloaded', userAvatarEventData);
       }).catch((err: Error) => {

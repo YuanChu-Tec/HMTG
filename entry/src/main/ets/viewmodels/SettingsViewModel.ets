@@ -6,6 +6,7 @@ import { ErrorHandler } from '../utils/error/ErrorHandler';
 import { FileDownloadService } from '../services/business/FileDownloadService';
 import { FileType, DownloadPriority } from '../models/TDLibData';
 import { EventBus } from '../utils/event/EventBus';
+import { fileIo as fs } from '@kit.CoreFileKit';
 
 const TAG = 'SettingsViewModel';
 const DOMAIN = 0x0001;
@@ -51,13 +52,13 @@ export class SettingsViewModel {
   
   private registerEventListeners(): void {
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
-    this.eventBus.on('core:avatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.on('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.on('core:userUpdated', this.handleCoreUserUpdated.bind(this));
     this.eventBus.on('core:userFullInfoUpdated', this.handleCoreUserFullInfoUpdated.bind(this));
   }
   
   private unregisterEventListeners(): void {
-    this.eventBus.off('core:avatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.off('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.off('core:userUpdated', this.handleCoreUserUpdated.bind(this));
     this.eventBus.off('core:userFullInfoUpdated', this.handleCoreUserFullInfoUpdated.bind(this));
   }
@@ -95,13 +96,18 @@ export class SettingsViewModel {
     // 检查是否是当前用户的头像
     if (fileId === this.currentAvatarFileId && path) {
       hilog.info(DOMAIN, TAG, `Avatar downloaded via core:avatarDownloaded: ${path}`);
+      // ⭐ 移除 file:// 前缀（如果存在）
+      let avatarPath = path;
+      if (avatarPath.startsWith('file://')) {
+        avatarPath = avatarPath.substring(7);
+      }
       // 更新头像路径
       this.userInfo = {
         fullName: this.userInfo.fullName,
         phoneNumber: this.userInfo.phoneNumber,
         username: this.userInfo.username,
         avatarInitials: this.userInfo.avatarInitials,
-        avatarPath: 'file://' + path
+        avatarPath: avatarPath
       };
       this.isAvatarDownloading = false;
     }
@@ -122,13 +128,22 @@ export class SettingsViewModel {
 
   private async loadUserInfo(): Promise<void> {
     try {
+      hilog.info(DOMAIN, TAG, '⭐ loadUserInfo() started');
+      
       // ⭐ 通过 CoreService 获取当前用户的完整信息
       const fullUserInfo = await this.CoreService.getCurrentUserFullInfo();
+      
+      hilog.info(DOMAIN, TAG, `⭐ getCurrentUserFullInfo result: ${fullUserInfo ? 'success' : 'null'}`);
+      if (fullUserInfo) {
+        const profilePhoto = fullUserInfo['profile_photo'];
+        hilog.info(DOMAIN, TAG, `⭐ profile_photo exists: ${profilePhoto ? 'yes' : 'no'}`);
+      }
 
       if (!fullUserInfo) {
         hilog.warn(DOMAIN, TAG, 'Failed to get current user full info');
         // 使用缓存作为后备
         const cachedInfo = this.CoreService.getCachedUserInfo(0);
+        hilog.info(DOMAIN, TAG, `⭐ Cached user info exists: ${cachedInfo ? 'yes' : 'no'}`);
         if (cachedInfo) {
           const nameParts = cachedInfo.name.split(' ');
           const firstName = nameParts[0] || '';
@@ -169,6 +184,7 @@ export class SettingsViewModel {
       let avatarPath = '';
       let avatarFileId = 0;
       const profilePhoto = fullUserInfo['profile_photo'] as Record<string, Object>;
+      hilog.info(DOMAIN, TAG, `⭐ profile_photo object: ${profilePhoto ? 'exists' : 'null'}`);
       if (profilePhoto?.['small']) {
         const small = profilePhoto['small'] as Record<string, Object>;
         const local = small['local'] as Record<string, Object>;
@@ -176,24 +192,44 @@ export class SettingsViewModel {
         // 获取头像fileId用于下载
         avatarFileId = (small['id'] as number) || 0;
         this.currentAvatarFileId = avatarFileId;
+        hilog.info(DOMAIN, TAG, `⭐ avatarPath: "${avatarPath}", avatarFileId: ${avatarFileId}`);
+
+        // ⭐ 如果有本地路径，检查文件是否真实存在
+        if (avatarPath) {
+          let checkPath = avatarPath;
+          if (checkPath.startsWith('file://')) {
+            checkPath = checkPath.substring(7);
+          }
+          try {
+            const stat = fs.statSync(checkPath);
+            hilog.info(DOMAIN, TAG, `⭐ Avatar file exists: ${checkPath}, size: ${stat.size}`);
+          } catch {
+            hilog.info(DOMAIN, TAG, `⭐ Avatar file not found at ${checkPath}, clearing path to trigger download`);
+            avatarPath = '';
+          }
+        }
       }
 
       // 如果头像为空，尝试从缓存获取
       if (!avatarPath) {
         const cachedInfo = this.CoreService.getCachedUserInfo(this.currentUserId);
+        hilog.info(DOMAIN, TAG, `⭐ Trying cached avatar for userId ${this.currentUserId}: ${cachedInfo?.avatar ? 'found' : 'not found'}`);
         if (cachedInfo?.avatar) {
           avatarPath = cachedInfo.avatar;
+          hilog.info(DOMAIN, TAG, `⭐ Using cached avatar path: "${avatarPath}"`);
         }
       }
       
       // ⭐ 如果头像为空且有fileId，触发异步下载
       if (!avatarPath && avatarFileId > 0 && !this.isAvatarDownloading) {
+        hilog.info(DOMAIN, TAG, `⭐ Triggering avatar download: avatarPath="${avatarPath}", avatarFileId=${avatarFileId}, isAvatarDownloading=${this.isAvatarDownloading}`);
         this.triggerAvatarDownload(avatarFileId);
+      } else {
+        hilog.info(DOMAIN, TAG, `⭐ Skip avatar download: avatarPath="${avatarPath}", avatarFileId=${avatarFileId}, isAvatarDownloading=${this.isAvatarDownloading}`);
       }
 
-      // ⭐ 处理头像路径，确保格式正确
       const originalAvatarPath = avatarPath;
-      if (avatarPath && !avatarPath.startsWith('file://') && avatarPath.startsWith('/')) {
+      if (avatarPath && !avatarPath.startsWith('file://')) {
         avatarPath = 'file://' + avatarPath;
       }
       hilog.info(DOMAIN, TAG, `⭐ Avatar path: "${originalAvatarPath}" -> "${avatarPath}"`);
@@ -231,27 +267,50 @@ export class SettingsViewModel {
   }
   
   /**
-   * ⭐ 触发头像异步下载
+   * ⭐ 触发头像异步下载（直接调用 FileDownloadService）
    */
   private triggerAvatarDownload(fileId: number): void {
     if (this.isAvatarDownloading) return;
     
     this.isAvatarDownloading = true;
-    hilog.info(DOMAIN, TAG, `Triggering avatar download for current user, fileId: ${fileId}`);
+    hilog.info(DOMAIN, TAG, `Triggering avatar download directly via FileDownloadService, fileId: ${fileId}`);
     
     this.fileDownloadService.downloadFile(
       fileId,
       FileType.PROFILE_PHOTO,
-      DownloadPriority.HIGH
-    ).then((path: string) => {
+      DownloadPriority.URGENT
+    ).then(async (path: string) => {
       hilog.info(DOMAIN, TAG, `✅ Avatar downloaded: ${path}`);
+      
+      // ⭐ 检查文件是否存在
+      let finalPath = path;
+      if (finalPath.startsWith('file://')) {
+        finalPath = finalPath.substring(7);
+      }
+      
+      try {
+        const stat = await fs.stat(finalPath);
+        hilog.info(DOMAIN, TAG, `✅ File exists: ${finalPath}, size: ${stat.size} bytes`);
+      } catch (statErr) {
+        hilog.warn(DOMAIN, TAG, `⚠️ File does not exist: ${finalPath}, error: ${JSON.stringify(statErr)}`);
+        // 文件不存在，不更新头像路径
+        this.isAvatarDownloading = false;
+        return;
+      }
+      
+      let displayPath = finalPath;
+      if (!displayPath.startsWith('file://')) {
+        displayPath = 'file://' + displayPath;
+      }
+      
       if (this.userInfo) {
+        hilog.info(DOMAIN, TAG, `✅ Updating userInfo.avatarPath to: ${displayPath}`);
         this.userInfo = {
           fullName: this.userInfo.fullName,
           phoneNumber: this.userInfo.phoneNumber,
           username: this.userInfo.username,
           avatarInitials: this.userInfo.avatarInitials,
-          avatarPath: 'file://' + path
+          avatarPath: displayPath
         };
       }
       this.isAvatarDownloading = false;

@@ -398,7 +398,8 @@ export class ChatPageViewModel {
       this.chatId = params.chatId || 0;
       this.chatType = params.chatType || ChatType.PRIVATE;
       this.chatTitle = params.title || '';
-      this.chatAvatar = params.avatar || '';
+      const avatarPath = params.avatar || '';
+      this.chatAvatar = avatarPath.startsWith('file://') ? avatarPath : 'file://' + avatarPath;
 
       hilog.info(DOMAIN, TAG, `Init chat: id=${this.chatId}, type=${this.chatType}, title=${this.chatTitle}`);
 
@@ -1249,9 +1250,8 @@ export class ChatPageViewModel {
         }
         // 更新消息的 senderAvatar
         if (userInfo.avatar && !message.senderAvatar) {
-          // ⭐ 修复：添加 file:// 前缀（如果缺少）
           let avatarPath = userInfo.avatar;
-          if (avatarPath && !avatarPath.startsWith('file://') && avatarPath.startsWith('/')) {
+          if (avatarPath && !avatarPath.startsWith('file://')) {
             avatarPath = 'file://' + avatarPath;
           }
           message.senderAvatar = avatarPath;
@@ -1295,9 +1295,8 @@ export class ChatPageViewModel {
             updated = true;
           }
           if (userInfo.avatar && !message.senderAvatar) {
-            // ⭐ 修复：添加 file:// 前缀（如果缺少）
             let avatarPath = userInfo.avatar;
-            if (avatarPath && !avatarPath.startsWith('file://') && avatarPath.startsWith('/')) {
+            if (avatarPath && !avatarPath.startsWith('file://')) {
               avatarPath = 'file://' + avatarPath;
             }
             message.senderAvatar = avatarPath;
@@ -2181,8 +2180,7 @@ export class ChatPageViewModel {
       const cachedUser = this.CoreService.getCachedUserInfo(userId);
       if (cachedUser && cachedUser.avatar) {
         let avatarPath = cachedUser.avatar;
-        // ⭐ 修复：添加 file:// 前缀（如果缺少）
-        if (avatarPath && !avatarPath.startsWith('file://') && avatarPath.startsWith('/')) {
+        if (avatarPath && !avatarPath.startsWith('file://')) {
           avatarPath = 'file://' + avatarPath;
         }
         return avatarPath;

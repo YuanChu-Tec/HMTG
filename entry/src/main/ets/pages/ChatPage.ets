@@ -218,7 +218,7 @@ export struct ChatPage {
 
       Stack() {
         if (this.viewModel.chatAvatar) {
-          Image(this.viewModel.chatAvatar)
+          Image(this.getImageSource(this.viewModel.chatAvatar))
             .width(36)
             .height(36)
             .borderRadius(18)
@@ -375,6 +375,13 @@ export struct ChatPage {
     let hash = 0;
     for (let i = 0; i < title.length; i++) hash = title.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
+  }
+
+  private getImageSource(path: string): string {
+    if (!path || path.startsWith('file://')) {
+      return path;
+    }
+    return 'file://' + path;
   }
 
   @Builder
@@ -730,7 +737,7 @@ export struct ChatPage {
       // 头像（左侧）
       Stack() {
         if (message.senderAvatar) {
-          Image(message.senderAvatar)
+          Image(this.getImageSource(message.senderAvatar))
             .width(36)
             .height(36)
             .borderRadius(18)

@@ -7,6 +7,11 @@
 export struct Avatar {
 
   @Param source: ResourceStr = '';
+  @Monitor('source')
+  onSourceChange(): void {
+    // source 变化时重置加载失败状态，尝试重新加载新图片
+    this.imageLoadFailed = false;
+  }
   @Param name: string = '';
   @Param avatarSize: number = 40;
   @Param fontSize: number = 18;
@@ -16,19 +21,9 @@ export struct Avatar {
   @Param isOnline: boolean = false;
   @Param avatarOnClick?: () => void = undefined;
 
+  // 图片加载状态：true 表示加载失败
+  @Local imageLoadFailed: boolean = false;
 
-  /**
-   * 获取背景色
-   */
-  private getBackgroundColor(): ResourceColor {
-    // 如果有图片源，不显示背景
-    const sourceStr = this.source as string;
-    if (this.source && typeof this.source === 'string' && sourceStr.length > 0) {
-      return Color.Transparent;
-    }
-
-    return this.avatarBackgroundColor;
-  }
 
   /**
    * 获取首字母
@@ -50,31 +45,42 @@ export struct Avatar {
     return this.radius;
   }
 
+  private getImageSource(): string {
+    if (!this.source || typeof this.source !== 'string' || this.source.length === 0) {
+      return '';
+    }
+    if (this.source.startsWith('file://')) {
+      return this.source;
+    }
+    return 'file://' + this.source;
+  }
+
   build() {
-    Stack({ alignContent: Alignment.BottomEnd }) {
-      // 头像主体
-      if (this.source && typeof this.source === 'string' && this.source.length > 0) {
-        Image(this.source)
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.source && typeof this.source === 'string' && this.source.length > 0 && !this.imageLoadFailed) {
+        Image(this.getImageSource())
           .width(this.avatarSize)
           .height(this.avatarSize)
           .borderRadius(this.getBorderRadius())
           .objectFit(ImageFit.Cover)
+          .onError(() => {
+            this.imageLoadFailed = true;
+          })
           .onClick(() => {
             if (this.avatarOnClick) {
               this.avatarOnClick();
             }
           })
       } else {
-        // 首字母头像
-        Text(this.getInitial())
+        // 首字母头像：使用 Circle + Text 组合
+        Circle()
           .width(this.avatarSize)
           .height(this.avatarSize)
+          .fill(this.avatarBackgroundColor)
+        Text(this.getInitial())
           .fontSize(this.fontSize)
           .fontColor(this.fontColor)
           .fontWeight(FontWeight.Medium)
-          .textAlign(TextAlign.Center)
-          .backgroundColor(this.getBackgroundColor())
-          .borderRadius(this.getBorderRadius())
           .onClick(() => {
             if (this.avatarOnClick) {
               this.avatarOnClick();
