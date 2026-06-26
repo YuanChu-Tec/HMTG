@@ -198,6 +198,7 @@ export {
   DownloadQueuedData,
   DownloadStartData,
   DownloadCancelledData,
+  QueueCheckResult,
   PersistedDownloadTask,
 
   // 通知相关

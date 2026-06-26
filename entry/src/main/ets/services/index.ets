@@ -18,37 +18,26 @@
  */
 
 // ==================== API Layer - API 工厂层 ====================
-export { TdApiFactory, createTdLibAPIs, createCustomTdLibAPIs } from './api/factory/TdApiFactory';
-export type { TDLibAPIs } from './api/factory/TdApiFactory';
+export { TdApiFactory, createTdLibAPIs, createCustomTdLibAPIs } from './core/api/factory/TdApiFactory';
+export type { TDLibAPIs } from './core/api/factory/TdApiFactory';
 
 // Core APIs (13 个)
-export { TDLibApi } from './api/TDLibApi';
-
-
-// ==================== Infrastructure Layer - 基础设施层 ====================
-export { ConnectionManager } from './infrastructure/connection/ConnectionManager';
-export { ConnectionState as InfraConnectionState } from './infrastructure/connection/ConnectionState';
+export { TDLibApi } from './core/api/TDLibApi';
 
 // ==================== Core Layer - 核心服务层 ====================
 export { TDLibClient } from './core/tdlib/TDLibClient';
 export type { ConnectionEventListener } from './core/tdlib/TDLibClient';
 export { ConnectionState as TdConnectionState } from './core/tdlib/TDLibClient';
 export { TDLibReceiver } from './core/tdlib/TDLibReceiver';
-export { AuthService } from './business/AuthService';  // ⚠️ 导出类,不创建实例
-export { AuthCache } from './business/AuthCache';
+export { AuthService } from './business/auth/AuthService'; // ⚠️ 导出类,不创建实例
+export { AuthCache } from './business/kernel/SecureStorage';
 export { TDLibCallbackDispatcher } from './core/callback/TDLibCallbackDispatcher';
 
 // Cache Service - 缓存服务（新增）
-export { CacheService } from './business/CacheService';
-
-
-
-
-// Calls Domain
-export { CallServiceImpl as CallService } from './business/calls/CallServiceImpl';
+export { CacheService } from './business/storage/MessagesStorage';
 
 // Chat Domain
-export { CoreService } from './business/CoreService';
+export { CoreService } from './business/messages/MessagesController';
 
 // Contacts Domain (已合并到 CoreService)
 export type {
@@ -64,36 +53,16 @@ export type {
 } from '../models/TDLibData';
 
 // Settings Domain
-export { ThemeService } from './business/ThemeService';
+export { ThemeService } from './business/theme/ChatThemeController';
 
 
 // ==================== Network Layer - 网络服务 ====================
-export { NetworkMonitorService } from './network/NetworkMonitorService';
+export { NetworkMonitorService } from './business/kernel/ConnectionMonitor';
 export { MTProtoProxyService } from './network/MTProtoProxyService';
 export { Socks5ProxyService } from './network/Socks5ProxyService';
-export { RequestQueueManager } from './network/RequestQueueManager';
-
-// Network Layer 类型导出
-export type {
-  RequestType,
-  RequestPriority,
-  RequestStatus,
-  RequestItem,
-  BatchRequestConfig
-} from './network/RequestQueueManager';
-
-// ==================== Optimization Layer - 优化服务 ====================
-export { PerformanceBoostService } from './optimization/PerformanceBoostService';
-export { PageContextManager } from './optimization/PageContextManager';
-
-// Optimization Layer 类型导出
-export type {
-  PageType
-} from './optimization/PageContextManager';
 
 // ==================== System Layer - 系统服务 ====================
-export { PasscodeHelper } from './system/PasscodeHelper';
-export { PushService } from './system/PushService';
-export { RemoteNotificationExtAbility } from './system/RemoteNotificationExtAbility';
+export { PushService } from './business/notification/PushController';
+
 
 // System Layer 类型导出

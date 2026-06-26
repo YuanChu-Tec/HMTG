@@ -7,7 +7,7 @@
  */
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { NetworkMonitorService } from './NetworkMonitorService';
+import { NetworkMonitorService } from '../business/kernel/ConnectionMonitor';
 
 const DOMAIN = 0x0001;
 const TAG = 'MTProtoProxyService';

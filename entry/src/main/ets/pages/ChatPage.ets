@@ -6,7 +6,8 @@ import { ThemeMode } from '../utils/utils/ImmersiveUtils';
 import { ChatPageViewModel, ChatPageParams, MessageDataSource } from '../viewmodels/ChatPageViewModel';
 import { ChatType, Message, MessageType, MessageContent, TextEntity, ForwardInfo,
   PollOption, GroupEventType, MessageReaction, InlineKeyboardMarkup, InlineKeyboardRow,
-  InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, FormattedText, SystemMessageType } from '../models/TDLibData';
+  InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, FormattedText, SystemMessageType,
+  DownloadPriority } from '../models/TDLibData';
 import { EventBus } from '../utils/event/EventBus';
 
 const TAG = 'ChatPage';
@@ -577,6 +578,9 @@ export struct ChatPage {
       // 监听滚动索引变化，记录当前可见区域并提前触发加载
       .onScrollIndex((start: number, end: number) => {
         this.currentStartIndex = start;
+        // 自动加载可见区域的媒体文件（图片、视频使用NORMAL优先级，贴纸使用LOW优先级）
+        this.viewModel.autoLoadVisibleMedia(start, end);
+        
         // 提前加载：当滚动到距离顶部还有 PRELOAD_THRESHOLD 条消息时触发加载
         // 注意：消息数组是 [旧消息, ..., 新消息] 顺序
         // start=0 表示显示的是最旧的消息（顶部），需要加载更早的历史
@@ -1616,7 +1620,7 @@ export struct ChatPage {
         return;
       }
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       } else {
         promptAction.showToast({ message: $r('app.string.cannot_preview'), duration: 1500 });
       }
@@ -1732,7 +1736,7 @@ export struct ChatPage {
     .padding(12)
     .onClick(() => {
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       } else {
         promptAction.showToast({ message: $r('app.string.file_open_coming'), duration: 1500 });
       }
@@ -1768,7 +1772,7 @@ export struct ChatPage {
     .padding(10)
     .onClick(() => {
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       } else {
         promptAction.showToast({ message: $r('app.string.voice_play_coming'), duration: 1500 });
       }
@@ -1785,7 +1789,7 @@ export struct ChatPage {
       .backgroundColor('#E0E0E0')
       .onClick(() => {
         if (!message.file?.path && message.media?.tdlibFileId) {
-          this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+          this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
         }
       })
   }
@@ -1826,7 +1830,7 @@ export struct ChatPage {
     }
     .onClick(() => {
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       }
     })
   }
@@ -2238,7 +2242,7 @@ export struct ChatPage {
     .padding(12)
     .onClick(() => {
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       } else {
         promptAction.showToast({ message: '音乐播放功能即将上线', duration: 1500 });
       }
@@ -2279,7 +2283,7 @@ export struct ChatPage {
     }
     .onClick(() => {
       if (!message.file?.path && message.media?.tdlibFileId) {
-        this.viewModel.triggerFileDownload(message.media.tdlibFileId);
+        this.viewModel.triggerFileDownload(message.media.tdlibFileId, DownloadPriority.HIGH, message.type);
       } else {
         promptAction.showToast({ message: $r('app.string.video_play_coming'), duration: 1500 });
       }

@@ -27,9 +27,9 @@ import {
   StoryEntity,
   StickerEntity
 } from '@storage/cache';
-import { FileType } from '../../models/TDLibData';
+import { FileType } from '../../../models/TDLibData';
 
-const TAG = 'CacheService';
+const TAG = 'MessagesStorage';
 
 /**
  * 缓存元数据接口

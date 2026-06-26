@@ -8,16 +8,8 @@
  * - RequestQueueManager: 请求队列管理
  */
 
-export { NetworkMonitorService } from './NetworkMonitorService';
+export { NetworkMonitorService } from '../business/kernel/ConnectionMonitor';
 export { MTProtoProxyService } from './MTProtoProxyService';
 export { Socks5ProxyService } from './Socks5ProxyService';
-export { RequestQueueManager } from './RequestQueueManager';
+export { PushService } from '../business/notification/PushController';
 
-// 导出类型定义
-export type {
-  RequestType,
-  RequestPriority,
-  RequestStatus,
-  RequestItem,
-  BatchRequestConfig
-} from './RequestQueueManager';

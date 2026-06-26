@@ -16,7 +16,7 @@
 import hilog from '@ohos.hilog';
 import { AppStorageV2 } from '@kit.ArkUI';
 
-const TAG = 'ThemeService';
+const TAG = 'ChatThemeController';
 const DOMAIN = 0x0001;
 
 /**

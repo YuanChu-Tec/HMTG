@@ -6,9 +6,9 @@
  * 迁移日期: 2026-03-15
  */
 
-import { TDLibApi, TdApiFactory } from '../api';
-import type { phoneNumberAuthenticationSettings$Input, AuthorizationState, ResendCodeReason$Input } from '../api/factory/tdlib-types';
-import { TDLibClient } from '../core';
+import { TDLibApi, TdApiFactory } from '../../core/api';
+import type { phoneNumberAuthenticationSettings$Input, AuthorizationState, ResendCodeReason$Input } from '../../core/api/factory/tdlib-types';
+import { TDLibClient } from '../../core';
 import { BusinessError as SystemBusinessError, BusinessError, emitter } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
@@ -24,10 +24,10 @@ import {
   AuthResult,
   AuthErrorCode,
   AuthState
-} from '../../models';
-import { authCache } from '../business/AuthCache';
-import { SessionEncryption } from '../../utils/SessionEncryption';
-import { TDLibAuthManager } from '../core/tdlib/TDLibAuthManager';
+} from '../../../models';
+import { authCache } from '../kernel/SecureStorage';
+import { SessionEncryption } from '../../../utils/SessionEncryption';
+import { TDLibAuthManager } from '../../core/tdlib/TDLibAuthManager';
 
 /** 验证码信息缓存接口 */
 export interface CodeInfoCache {

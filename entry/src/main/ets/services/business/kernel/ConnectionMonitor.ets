@@ -9,7 +9,7 @@ import connection from '@ohos.net.connection';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { emitter } from '@kit.BasicServicesKit';
 
-const TAG = 'NetworkMonitorService';
+const TAG = 'ConnectionMonitor';
 const DOMAIN = 0x0001;
 
 /** 网络类型 */

@@ -133,10 +133,20 @@ export interface SystemMessageParams {
 }
 
 export enum DownloadPriority {
-  LOW = 1,
-  NORMAL = 16,
-  HIGH = 24,
-  URGENT = 32
+  LOW = 0,          // 后台预加载、离屏内容
+  NORMAL = 1,       // 默认优先级（头像、普通消息媒体）
+  NORMAL_UP = 2,    // 正常优先级提升
+  HIGH = 3,         // 用户主动查看的图片/视频
+  STREAM = 4        // 视频流播放（最高）
+}
+
+export const PRIORITY_VALUE_MAX = (1 << 20);      // 1,048,576
+export const PRIORITY_VALUE_NORMAL = (1 << 16);    // 65,536
+export const PRIORITY_VALUE_LOW = 0;
+
+export enum FileLoaderQueueType {
+  SMALL = 0,   // 小文件队列（头像、缩略图）
+  LARGE = 1    // 大文件队列（视频、大文档）
 }
 
 export enum DownloadStatus {
@@ -1222,6 +1232,7 @@ export interface DownloadTask {
   fileId: number;
   type: FileType;
   priority: DownloadPriority;
+  priorityValue?: number;
   status: DownloadStatus;
   progress: number;
   downloadedBytes: number;
@@ -1289,6 +1300,11 @@ export interface DownloadStartData {
 export interface DownloadCancelledData {
   taskId: string;
   fileId: number;
+}
+
+export interface QueueCheckResult {
+  start: DownloadTask[];
+  pause: DownloadTask[];
 }
 
 export interface PersistedDownloadTask {

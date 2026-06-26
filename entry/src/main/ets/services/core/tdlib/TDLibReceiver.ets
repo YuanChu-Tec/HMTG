@@ -12,7 +12,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { TDLibClient, ConnectionEventListener } from './TDLibClient';
 import { tdLibCallbackDispatcher } from '../callback/TDLibCallbackDispatcher';
-import { AuthService, CodeInfoCache } from '../../business/AuthService';
+import { AuthService, CodeInfoCache } from '../../business/auth/AuthService';
 import { eventBus } from '../../../utils/event/EventBus';
 
 const TAG = 'TDLibReceiver';

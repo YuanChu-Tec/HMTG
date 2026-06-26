@@ -36,7 +36,7 @@ Thumbs.db
 
 # --- 项目特定配置 ---
 # Telegram API 凭证（勿提交真实 api_hash）
-entry/src/main/ets/services/config/TelegramApiConfig.ets
+/entry/src/main/ets/services/core/config/TelegramApiConfig.ets
 
 # AI IDE 配置
 /.lingma/
@@ -47,4 +47,5 @@ entry/src/main/ets/services/config/TelegramApiConfig.ets
 # 参考文件
 /reference/
 /docs/
+
 
