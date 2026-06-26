@@ -6,7 +6,7 @@
  * @see https://core.telegram.org/tdlib/docs/
  */
 
-import { TDLibClient } from '../core/tdlib/TDLibClient';
+import { TDLibClient } from '../../core/tdlib/TDLibClient';
 import type {
   // ==================== 基础类型 ====================
   Ok,

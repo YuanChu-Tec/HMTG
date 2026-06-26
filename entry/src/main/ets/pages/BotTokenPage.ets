@@ -3,9 +3,9 @@
  * 用于通过 @BotFather 获取的 Token 登录
  */
 import { AuthService } from '../services/core';
-import { TdApiFactory } from '../services/api/factory/TdApiFactory';
-import { TDLibApi } from '../services/api/TDLibApi';
-import type { Ok, AuthorizationState } from '../services/api/factory/tdlib-types';
+import { TdApiFactory } from '../services/core/api/factory/TdApiFactory';
+import { TDLibApi } from '../services/core/api/TDLibApi';
+import type { Ok, AuthorizationState } from '../services/core/api/factory/tdlib-types';
 import { LoadingIndicator } from '../ui_kit/components/LoadingIndicator';
 import { router, promptAction } from '@kit.ArkUI';
 import { logPageInfo, logPageError } from '../utils/log/LogService';

@@ -16,13 +16,8 @@
  * - stories/: 故事相关服务
  */
 
-
-
-// Calls Domain
-export { CallServiceImpl as CallService } from './calls/CallServiceImpl';
-
 // Chat Domain
-export { CoreService } from './CoreService';
+export { CoreService } from './messages/MessagesController';
 
 // Settings Domain
-export { ThemeService } from './ThemeService';
+export { ThemeService } from './theme/ChatThemeController';

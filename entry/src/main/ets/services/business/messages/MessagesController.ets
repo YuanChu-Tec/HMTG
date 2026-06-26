@@ -9,16 +9,16 @@
  */
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { Message, Chat, MessageType, MessageStatus, ChatType, DraftMessage, UserStatus, MessageContent, Contact, ContactGroup, ContactListItemData, ContactSearchResult, ContactStats, OnlineStatus, SyncStatus, PhoneNumber, FileInfo, LocationInfo, ContactInfo, PollInfo, PollOption, ChatMemberStatus, ChatPermissions, Usernames } from '../../models/TDLibData';
-import { AppLogger } from '../../utils/log/LogService';
+import { Message, Chat, MessageType, MessageStatus, ChatType, DraftMessage, UserStatus, MessageContent, Contact, ContactGroup, ContactListItemData, ContactSearchResult, ContactStats, OnlineStatus, SyncStatus, PhoneNumber, FileInfo, LocationInfo, ContactInfo, PollInfo, PollOption, ChatMemberStatus, ChatPermissions, Usernames } from '../../../models/TDLibData';
+import { AppLogger } from '../../../utils/log/LogService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { TdApiFactory } from '../api/factory/TdApiFactory';
-import { TDLibApi } from '../api/TDLibApi';
-import type { File, Messages, inputMessageText$Input as inputMessageText, inputMessagePhoto$Input as inputMessagePhoto, formattedText, inputFileLocal$Input as inputFileLocal, fileTypePhoto, inputThumbnail$Input as inputThumbnail, InputFile$Input as InputFile, inputPhoto$Input as inputPhoto, MessageSelfDestructType, messageSelfDestructTypeImmediately, chatListMain$Input, Chats, ChatList, Ok, User, importedContact$Input, chatNotificationSettings$Input, callProtocol, messageStory } from '../api/factory/tdlib-types';
-import { EventBus } from '../../utils/event/EventBus';
-import { FileDownloadService } from './FileDownloadService';
-import { FileType, DownloadPriority, UPDATE_MASK_MESSAGE_SENT, UPDATE_MASK_MESSAGE_FAILED, UPDATE_MASK_MESSAGE_EDITED, UPDATE_MASK_MESSAGE_DELETED, UPDATE_MASK_MESSAGE_STATUS, UPDATE_MASK_CHAT_ACTION, UPDATE_MASK_FILE_PROGRESS, UPDATE_MASK_CONNECTION, UPDATE_MASK_USER_AVATAR, UPDATE_MASK_NEW_MESSAGE, UPDATE_MASK_CHAT_LIST } from '../../models/TDLibData';
-import { CacheService } from './CacheService'; // 缓存服务
+import { TdApiFactory } from '../../core/api/factory/TdApiFactory';
+import { TDLibApi } from '../../core/api/TDLibApi';
+import type { File, Messages, inputMessageText$Input as inputMessageText, inputMessagePhoto$Input as inputMessagePhoto, formattedText, inputFileLocal$Input as inputFileLocal, fileTypePhoto, inputThumbnail$Input as inputThumbnail, InputFile$Input as InputFile, inputPhoto$Input as inputPhoto, MessageSelfDestructType, messageSelfDestructTypeImmediately, chatListMain$Input, Chats, ChatList, Ok, User, importedContact$Input, chatNotificationSettings$Input, callProtocol, messageStory } from '../../core/api/factory/tdlib-types';
+import { EventBus } from '../../../utils/event/EventBus';
+import { FileDownloadService } from '../files/DownloadController';
+import { FileType, DownloadPriority, UPDATE_MASK_MESSAGE_SENT, UPDATE_MASK_MESSAGE_FAILED, UPDATE_MASK_MESSAGE_EDITED, UPDATE_MASK_MESSAGE_DELETED, UPDATE_MASK_MESSAGE_STATUS, UPDATE_MASK_CHAT_ACTION, UPDATE_MASK_FILE_PROGRESS, UPDATE_MASK_CONNECTION, UPDATE_MASK_USER_AVATAR, UPDATE_MASK_NEW_MESSAGE, UPDATE_MASK_CHAT_LIST } from '../../../models/TDLibData';
+import { CacheService } from '../storage/MessagesStorage'; // 缓存服务
 import { CacheStorage, ChatEntity, MessageEntity } from '@storage/cache'; // ⭐ storage_cache模块
 
 const eventBus = EventBus.getInstance();
@@ -1126,7 +1126,9 @@ export class CoreService {
         // 如果没有本地路径但有 fileId，触发异步下载
         if (!avatar && fileId && fileId > 0) {
           hilog.info(0x0001, 'CoreService', `Chat ${chatId} triggering avatar download for fileId: ${fileId}`);
-          this.triggerAvatarDownload(fileId, chatId);
+          if (this.fileDownloadService) {
+            this.fileDownloadService.triggerChatAvatarDownload(fileId, chatId);
+          }
         }
       }
     }
@@ -1670,7 +1672,17 @@ export class CoreService {
               // ⭐ 如果本地没有头像但有 fileId，触发异步下载
               if (!localPath && fileId && fileId > 0) {
                 hilog.info(0x0001, 'CoreService', `User ${userId} avatar not downloaded, triggering download for fileId: ${fileId}`);
-                this.triggerUserAvatarDownload(fileId, userId);
+                if (this.fileDownloadService) {
+                  // 查找关联的私聊 ID 用于优先级优化
+                  let associatedChatId: number | undefined = undefined;
+                  for (const chat of this.chatList) {
+                    if (chat.type === ChatType.PRIVATE && chat.userId === userId) {
+                      associatedChatId = chat.id;
+                      break;
+                    }
+                  }
+                  this.fileDownloadService.triggerUserAvatarDownload(fileId, userId, associatedChatId);
+                }
               }
             }
           }
@@ -1682,7 +1694,7 @@ export class CoreService {
         // ⭐ 保存到数据库（异步，不阻塞返回）
         if (this.cacheStorage) {
           try {
-            const tdlibConverterModule = await import('../core/TdlibConverter');
+            const tdlibConverterModule = await import('../../core/TdlibConverter');
             const userEntity = tdlibConverterModule.TdlibConverter.convertToUser(userRecord);
             await this.cacheStorage.saveUser(userEntity);
             hilog.debug(0x0001, 'CoreService', `User ${userId} saved to database`);
@@ -2425,118 +2437,6 @@ export class CoreService {
   }
   
   /**
-   * 触发头像异步下载（通过 FileDownloadService + CacheService）
-   */
-  private triggerAvatarDownload(fileId: number, chatId: number): void {
-    try {
-      // 延迟初始化 FileDownloadService
-      if (!this.fileDownloadService) {
-        hilog.warn(0x0001, 'CoreService', 'FileDownloadService not initialized yet, skipping avatar download');
-        return;
-      }
-      
-      // 异步触发下载，不阻塞当前流程
-      // 使用 PROFILE_PHOTO 类型，头像有独立的下载策略和大小限制
-      this.fileDownloadService.downloadFile(
-        fileId,
-        FileType.PROFILE_PHOTO,
-        DownloadPriority.HIGH  // 头像优先下载
-      ).then(async (path: string) => {
-        hilog.info(0x0001, 'CoreService', `✅ Avatar downloaded for chat ${chatId}: ${path}`);
-        
-        // 从文件读取数据并缓存到 CacheService
-        try {
-          const file = await fs.open(path, fs.OpenMode.READ_ONLY);
-          const stat = await fs.stat(path);
-          const buffer = new ArrayBuffer(stat.size);
-          await fs.read(file.fd, buffer, { offset: 0, length: stat.size });
-          await fs.close(file);
-          
-          await this.cacheService.cacheAvatar(chatId, path, buffer);
-          hilog.info(0x0001, 'CoreService', `✅ Avatar cached for chat ${chatId}`);
-        } catch (cacheErr) {
-          hilog.warn(0x0001, 'CoreService', `Failed to cache avatar: ${JSON.stringify(cacheErr)}`);
-        }
-        
-        // ⭐ 直接更新本地缓存中的头像路径，而不是重新从 TDLib 获取
-        // 因为 TDLib 可能还没有更新 photo.small.local.path
-        const chat = this.getChat(chatId);
-        if (chat) {
-          chat.avatar = path;
-          hilog.info(0x0001, 'CoreService', `✅ Updated avatar path in cache for chat ${chatId}: ${path}`);
-          this.publishChatListChanged();
-        } else {
-          // 如果缓存中没有，尝试刷新
-          this.refreshChat(chatId);
-        }
-      }).catch((err: Error) => {
-        hilog.warn(0x0001, 'CoreService', `⚠️ Avatar download failed for chat ${chatId}: ${err.message}`);
-      });
-    } catch (error) {
-      hilog.error(0x0001, 'CoreService', `❌ Trigger avatar download error: ${JSON.stringify(error)}`);
-    }
-  }
-  
-  /**
-   * ⭐ 触发用户头像异步下载（通过 FileDownloadService）
-   * 与聊天头像下载类似，但更新用户缓存而非聊天缓存
-   * 优化：传入当前活跃聊天 ID，让该聊天的头像下载获得优先级加成
-   * 优化2：使用最高优先级确保头像优先下载
-   */
-  public triggerUserAvatarDownload(fileId: number, userId: number): void {
-    try {
-      // 延迟初始化 FileDownloadService
-      if (!this.fileDownloadService) {
-        hilog.warn(0x0001, 'CoreService', 'FileDownloadService not initialized yet, skipping user avatar download');
-        return;
-      }
-      
-      // ⭐ 尝试找到该用户对应的私聊 chatId，用于优先级优化
-      let associatedChatId: number | undefined = undefined;
-      for (const chat of this.chatList) {
-        if (chat.type === ChatType.PRIVATE && chat.userId === userId) {
-          associatedChatId = chat.id;
-          break;
-        }
-      }
-      
-      // 异步触发下载，不阻塞当前流程
-      // 传入 associatedChatId，让当前活跃聊天的头像下载获得优先级加成
-      // 使用 URGENT 优先级确保头像最先下载
-      this.fileDownloadService.downloadFile(
-        fileId,
-        FileType.PROFILE_PHOTO,
-        DownloadPriority.URGENT, // ⭐ 使用最高优先级
-        undefined, // messageId
-        associatedChatId // chatId for priority boost
-      ).then(async (path: string) => {
-        hilog.info(0x0001, 'CoreService', `✅ User avatar downloaded for user ${userId}: ${path}`);
-        
-        // ⭐ 添加 file:// 前缀
-        const avatarPath = path.startsWith('file://') ? path : 'file://' + path;
-        
-        // ⭐ 更新用户缓存中的头像路径
-        const cachedUser = this.userCache.get(userId);
-        if (cachedUser) {
-          cachedUser.avatar = avatarPath;
-          hilog.info(0x0001, 'CoreService', `✅ Updated avatar path in user cache for user ${userId}: ${avatarPath}`);
-        }
-        
-        // ⭐ 发送用户头像下载完成事件，通知 ViewModel 刷新
-        const userAvatarEventData: Record<string, Object> = new Object() as Record<string, Object>;
-        userAvatarEventData['fileId'] = fileId as Object;
-        userAvatarEventData['path'] = avatarPath as Object;
-        userAvatarEventData['userId'] = userId as Object;
-        eventBus.emit('core:userAvatarDownloaded', userAvatarEventData);
-      }).catch((err: Error) => {
-        hilog.warn(0x0001, 'CoreService', `⚠️ User avatar download failed for user ${userId}: ${err.message}`);
-      });
-    } catch (error) {
-      hilog.error(0x0001, 'CoreService', `❌ Trigger user avatar download error: ${JSON.stringify(error)}`);
-    }
-  }
-  
-  /**
    * 设置 FileDownloadService 实例（由外部调用）
    */
   public setFileDownloadService(service: FileDownloadService): void {
@@ -2699,7 +2599,7 @@ export class CoreService {
         if (this.cacheStorage && this.cacheStorage.database) {
           try {
             // 将内存中的 Message 转为数据库实体
-            const tdlibConverterModule = await import('../core/TdlibConverter');
+            const tdlibConverterModule = await import('../../core/TdlibConverter');
             const msgJson = JSON.stringify({
               'id': messageId,
               'chat_id': chatId,
@@ -2967,7 +2867,7 @@ export class CoreService {
 
       if (contactsResult && contactsResult.user_ids) {
         const userIds = contactsResult.user_ids;
-        const tdlibConverterModule = await import('../core/TdlibConverter');
+        const tdlibConverterModule = await import('../../core/TdlibConverter');
 
         for (let i = 0; i < userIds.length; i++) {
           const userId = userIds[i];
@@ -3487,28 +3387,6 @@ export class CoreService {
   }
 
   /**
-   * 下载文件
-   * @param fileId 文件ID
-   * @param priority 优先级
-   * @param offset 偏移量
-   * @param limit 限制
-   * @param synchronous 是否同步
-   */
-  public async downloadFile(
-    fileId: number,
-    priority: number = 1,
-    offset: number = 0,
-    limit: number = 0,
-    synchronous: boolean = false
-  ): Promise<void> {
-    try {
-      await this.tdLibApi.downloadFile(fileId, priority, offset, limit, synchronous);
-    } catch (error) {
-      hilog.error(0x0001, 'CoreService', `Download file failed: ${JSON.stringify(error)}`);
-    }
-  }
-
-  /**
    * 保存消息到本地数据库
    * @param message TDLib 消息对象
    * @param chatId 聊天ID
@@ -3516,7 +3394,7 @@ export class CoreService {
   public async saveMessageToDatabase(message: Record<string, Object>, chatId: number): Promise<void> {
     try {
       // 转换消息实体
-      const tdlibConverterModule = await import('../core/TdlibConverter');
+      const tdlibConverterModule = await import('../../core/TdlibConverter');
       const entity = tdlibConverterModule.TdlibConverter.convertToMessage(message, chatId);
       
       // 使用 CacheStorage 保存消息
@@ -3542,7 +3420,7 @@ export class CoreService {
     if (!this.cacheStorage || tdMessages.length === 0) return 0;
 
     try {
-      const tdlibConverterModule = await import('../core/TdlibConverter');
+      const tdlibConverterModule = await import('../../core/TdlibConverter');
       const entities: MessageEntity[] = [];
 
       for (const msg of tdMessages) {
@@ -4564,7 +4442,7 @@ export class CoreService {
     const userObj = update['user'] as Record<string, Object> | undefined;
     if (userObj && this.cacheStorage) {
       try {
-        const tdlibConverterModule = await import('../core/TdlibConverter');
+        const tdlibConverterModule = await import('../../core/TdlibConverter');
         const userEntity = tdlibConverterModule.TdlibConverter.convertToUser(userObj);
         await this.cacheStorage.saveUser(userEntity);
         hilog.info(0x0001, 'CoreService', `💾 [DB-FIRST] User ${userId} saved to database`);

@@ -3,8 +3,8 @@
  * 职责：接收所有 TDLib 原始更新，解析后调用 CoreService 的业务方法。
  * 不维护任何业务状态，只做"原始更新 → 方法调用"的转换。
  */
-import { EventBus } from '../../utils/event/EventBus';
-import { CoreService } from './CoreService';
+import { EventBus } from '../../../utils/event/EventBus';
+import { CoreService } from '../messages/MessagesController';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 export class UpdateService {

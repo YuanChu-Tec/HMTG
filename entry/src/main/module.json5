@@ -129,17 +129,6 @@
             "resource": "$profile:backup_config"
           }
         ],
-      },
-      {
-        "name": "RemoteNotificationExtAbility",
-        "srcEntry": "./ets/services/system/RemoteNotificationExtAbility.ets",
-        "type": "remoteNotification",
-        "exported": true,
-        "skills": [
-          {
-            "actions": ["action.hms.push.extension.remotenotification"]
-          }
-        ]
       }
     ]
   }

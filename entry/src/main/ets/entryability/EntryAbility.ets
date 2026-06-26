@@ -9,10 +9,10 @@ import { TDLibAuthManager } from '../services/core/tdlib/TDLibAuthManager'; // �
 import { i18n } from '../utils/i18n/I18n'; // ⭐ 国际化工具
 import { fileIo } from '@kit.CoreFileKit';
 import { PushService } from '../services';
-import { CoreService } from '../services/business/CoreService';
-import { FileDownloadService } from '../services/business/FileDownloadService';
+import { CoreService } from '../services/business/messages/MessagesController';
+import { FileDownloadService } from '../services/business/files/DownloadController';
 import { AppStateManager } from '../services/AppStateManager'; // ⭐ 全局状态机
-import { CacheService } from '../services/business/CacheService'; // ⭐ 统一缓存服务
+import { CacheService } from '../services/business/storage/MessagesStorage'; // ⭐ 统一缓存服务
 import { CacheStorage } from '@storage/cache'; // ⭐ storage_cache模块
 
 // Temporarily removed: @telegram/database-core

@@ -2,57 +2,174 @@
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs, statfs } from '@kit.CoreFileKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { TDLibApi, TdApiFactory } from '../api';
-import { EventBus } from '../../utils/event/EventBus';
-import { NetworkMonitor } from '../../utils/network/NetworkMonitor';
-import { FileSizeFormatter } from '../../utils/formatter/FileSizeFormatter';
-import { CacheService, MediaType, MediaMetadata } from '../business/CacheService';
-import { Deferred } from '../../utils/Deferred';
+import { TDLibApi, TdApiFactory } from '../../core/api';
+import { EventBus } from '../../../utils/event/EventBus';
+import { NetworkMonitor } from '../../../utils/network/NetworkMonitor';
+import { FileSizeFormatter } from '../../../utils/formatter/FileSizeFormatter';
+import { CacheService, MediaType, MediaMetadata } from '../storage/MessagesStorage';
+import { Deferred } from '../../../utils/Deferred';
 import {
   FileType, DownloadPriority, DownloadStatus, NetworkPolicy,
   AutoDownloadConfig, DownloadTask, DownloadProgressData,
   DownloadCompleteData, DownloadFailedData, DownloadPausedData,
   DownloadQueuedData, DownloadStartData, DownloadCancelledData,
-  PersistedDownloadTask, DownloadEvent
-} from '../../models/TDLibData';
+  PersistedDownloadTask, DownloadEvent, QueueCheckResult,
+  PRIORITY_VALUE_MAX, PRIORITY_VALUE_NORMAL, PRIORITY_VALUE_LOW, FileLoaderQueueType
+} from '../../../models/TDLibData';
 
-const TAG = 'FileDownloadService';
-const STORAGE_KEY = 'download_tasks'; // 用于持久化
-const DEFAULT_AUTO_CONFIG: AutoDownloadConfig = {
-  // 基础媒体类型
-  images: NetworkPolicy.WIFI_OR_CELLULAR,
-  videos: NetworkPolicy.WIFI_ONLY,
-  audios: NetworkPolicy.WIFI_OR_CELLULAR,
-  documents: NetworkPolicy.NEVER,
+const TAG = 'DownloadController';
+const STORAGE_KEY = 'download_tasks';
 
-  // 消息类型
-  stickers: NetworkPolicy.WIFI_OR_CELLULAR,
-  animations: NetworkPolicy.WIFI_OR_CELLULAR,
-  voiceNotes: NetworkPolicy.WIFI_OR_CELLULAR,
-  videoNotes: NetworkPolicy.WIFI_ONLY,
+// 大文件阈值：20MB（与 Nagram 一致）
+const BIG_FILE_THRESHOLD = 20 * 1024 * 1024;
 
-  // 特殊类型
-  profilePhotos: NetworkPolicy.WIFI_OR_CELLULAR,
-  wallpapers: NetworkPolicy.WIFI_ONLY,
-  thumbnails: NetworkPolicy.WIFI_OR_CELLULAR,
+// 小文件队列最大并发
+const SMALL_QUEUE_MAX_ACTIVE = 5;
+// 大文件队列最大并发
+const LARGE_QUEUE_MAX_ACTIVE = 2;
 
-  // 文件大小限制
-  maxImageSize: 10 * 1024 * 1024,      // 10MB
-  maxVideoSize: 100 * 1024 * 1024,     // 100MB
-  maxAudioSize: 50 * 1024 * 1024,      // 50MB
-  maxDocumentSize: 100 * 1024 * 1024,  // 100MB
-  maxStickerSize: 5 * 1024 * 1024,     // 5MB
-  maxAnimationSize: 20 * 1024 * 1024,  // 20MB
-  maxVoiceNoteSize: 10 * 1024 * 1024,  // 10MB
-  maxVideoNoteSize: 50 * 1024 * 1024,  // 50MB
-  maxProfilePhotoSize: 5 * 1024 * 1024, // 5MB
-  maxThumbnailSize: 2 * 1024 * 1024,   // 2MB
-
-  roamingAllowed: false
-};
+function createAutoDownloadConfig(): AutoDownloadConfig {
+  return {
+    images: NetworkPolicy.WIFI_OR_CELLULAR,
+    videos: NetworkPolicy.WIFI_ONLY,
+    audios: NetworkPolicy.WIFI_OR_CELLULAR,
+    documents: NetworkPolicy.NEVER,
+    stickers: NetworkPolicy.WIFI_OR_CELLULAR,
+    animations: NetworkPolicy.WIFI_OR_CELLULAR,
+    voiceNotes: NetworkPolicy.WIFI_OR_CELLULAR,
+    videoNotes: NetworkPolicy.WIFI_ONLY,
+    profilePhotos: NetworkPolicy.WIFI_OR_CELLULAR,
+    wallpapers: NetworkPolicy.WIFI_ONLY,
+    thumbnails: NetworkPolicy.WIFI_OR_CELLULAR,
+    maxImageSize: 10 * 1024 * 1024,
+    maxVideoSize: 100 * 1024 * 1024,
+    maxAudioSize: 50 * 1024 * 1024,
+    maxDocumentSize: 100 * 1024 * 1024,
+    maxStickerSize: 5 * 1024 * 1024,
+    maxAnimationSize: 20 * 1024 * 1024,
+    maxVoiceNoteSize: 10 * 1024 * 1024,
+    maxVideoNoteSize: 50 * 1024 * 1024,
+    maxProfilePhotoSize: 5 * 1024 * 1024,
+    maxThumbnailSize: 2 * 1024 * 1024,
+    roamingAllowed: false
+  };
+}
 
 /**
- * 优化版文件下载服务
+ * ⭐ 文件加载优先级队列（参考 Nagram FileLoaderPriorityQueue）
+ * 按优先级降序排列，高优先级任务优先执行
+ */
+class FileLoaderPriorityQueue {
+  private name: string;
+  private type: FileLoaderQueueType;
+  private allOperations: DownloadTask[] = [];
+  private tmpListOperations: DownloadTask[] = [];
+  private maxActive: number;
+
+  constructor(name: string, type: FileLoaderQueueType) {
+    this.name = name;
+    this.type = type;
+    this.maxActive = type === FileLoaderQueueType.LARGE ? LARGE_QUEUE_MAX_ACTIVE : SMALL_QUEUE_MAX_ACTIVE;
+  }
+
+  add(operation: DownloadTask): void {
+    // 移除已存在的相同任务
+    for (let i = 0; i < this.allOperations.length; i++) {
+      if (this.allOperations[i].id === operation.id) {
+        this.allOperations.splice(i, 1);
+        i--;
+      }
+    }
+
+    // 按 priorityValue 降序插入（高优先级在前）
+    const opValue = operation.priorityValue ?? operation.priority;
+    let index = -1;
+    for (let i = 0; i < this.allOperations.length; i++) {
+      const existingValue = this.allOperations[i].priorityValue ?? this.allOperations[i].priority;
+      if (opValue > existingValue) {
+        index = i;
+        break;
+      }
+    }
+    if (index >= 0) {
+      this.allOperations.splice(index, 0, operation);
+    } else {
+      this.allOperations.push(operation);
+    }
+  }
+
+  remove(operation: DownloadTask): boolean {
+    const index = this.allOperations.findIndex(op => op.id === operation.id);
+    if (index !== -1) {
+      this.allOperations.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  getPosition(operation: DownloadTask): number {
+    return this.allOperations.findIndex(op => op.id === operation.id);
+  }
+
+  getCount(): number {
+    return this.allOperations.length;
+  }
+
+  /**
+   * 检查并调度加载操作
+   * 返回需要启动的任务列表和需要暂停的任务列表
+   */
+  checkLoadingOperations(): QueueCheckResult {
+    const start: DownloadTask[] = [];
+    const pause: DownloadTask[] = [];
+
+    let activeCount = 0;
+    let lastPriorityValue = 0;
+    let pauseAllNextOperations = false;
+
+    for (let i = 0; i < this.allOperations.length; i++) {
+      const prevOperation = i > 0 ? this.allOperations[i - 1] : null;
+      const operation = this.allOperations[i];
+      const opValue = operation.priorityValue ?? operation.priority;
+      const prevValue = prevOperation ? (prevOperation.priorityValue ?? prevOperation.priority) : 0;
+
+      if (i > 0 && !pauseAllNextOperations) {
+        // 大文件队列中，STREAM/HIGH 优先级任务会暂停后续 LOW 优先级任务
+        if (this.type === FileLoaderQueueType.LARGE) {
+          if (prevOperation && prevValue >= PRIORITY_VALUE_MAX && opValue <= PRIORITY_VALUE_LOW) {
+            pauseAllNextOperations = true;
+          }
+        }
+        // 当上一个任务优先级 > LOW 且当前任务优先级 == LOW 时，暂停后续
+        if (lastPriorityValue > PRIORITY_VALUE_LOW && opValue <= PRIORITY_VALUE_LOW) {
+          pauseAllNextOperations = true;
+        }
+      }
+
+      if (operation.status === DownloadStatus.COMPLETED) {
+        // 已完成的任务不占用并发槽位
+        continue;
+      } else if (!pauseAllNextOperations && activeCount < this.maxActive) {
+        start.push(operation);
+        activeCount++;
+      } else {
+        pause.push(operation);
+      }
+
+      lastPriorityValue = opValue;
+    }
+
+    return { start, pause };
+  }
+}
+
+/**
+ * Nagram 风格文件下载服务
+ * 特性：
+ * 1. 小文件/大文件队列分离
+ * 2. 5级优先级体系（STREAM/HIGH/NORMAL_UP/NORMAL/LOW）
+ * 3. 可见性感知的动态优先级调整
+ * 4. 头像使用 NORMAL 优先级（不特殊处理）
  */
 export class FileDownloadService {
   private static instance: FileDownloadService;
@@ -60,43 +177,25 @@ export class FileDownloadService {
   private eventBus: EventBus;
   private networkMonitor: NetworkMonitor;
   private cacheService: CacheService;
-  private downloadEventBus: EventBus = EventBus.getInstance(); // 独立的下载事件总线
-  
-  // 文件ID到本地路径的映射(用于快速查询)
+  private downloadEventBus: EventBus = EventBus.getInstance();
+
+  // 文件ID到本地路径的映射
   private filePathCache: Map<number, string> = new Map();
 
+  // ⭐ 小文件队列（头像、缩略图、小图片）
+  private smallFilesQueue: FileLoaderPriorityQueue;
+  // ⭐ 大文件队列（视频、大文档）
+  private largeFilesQueue: FileLoaderPriorityQueue;
+
   // 配置
-  private autoConfig: AutoDownloadConfig = {
-    images: DEFAULT_AUTO_CONFIG.images,
-    videos: DEFAULT_AUTO_CONFIG.videos,
-    audios: DEFAULT_AUTO_CONFIG.audios,
-    documents: DEFAULT_AUTO_CONFIG.documents,
-    stickers: DEFAULT_AUTO_CONFIG.stickers,
-    animations: DEFAULT_AUTO_CONFIG.animations,
-    voiceNotes: DEFAULT_AUTO_CONFIG.voiceNotes,
-    videoNotes: DEFAULT_AUTO_CONFIG.videoNotes,
-    profilePhotos: DEFAULT_AUTO_CONFIG.profilePhotos,
-    wallpapers: DEFAULT_AUTO_CONFIG.wallpapers,
-    thumbnails: DEFAULT_AUTO_CONFIG.thumbnails,
-    maxImageSize: DEFAULT_AUTO_CONFIG.maxImageSize,
-    maxVideoSize: DEFAULT_AUTO_CONFIG.maxVideoSize,
-    maxAudioSize: DEFAULT_AUTO_CONFIG.maxAudioSize,
-    maxDocumentSize: DEFAULT_AUTO_CONFIG.maxDocumentSize,
-    maxStickerSize: DEFAULT_AUTO_CONFIG.maxStickerSize,
-    maxAnimationSize: DEFAULT_AUTO_CONFIG.maxAnimationSize,
-    maxVoiceNoteSize: DEFAULT_AUTO_CONFIG.maxVoiceNoteSize,
-    maxVideoNoteSize: DEFAULT_AUTO_CONFIG.maxVideoNoteSize,
-    maxProfilePhotoSize: DEFAULT_AUTO_CONFIG.maxProfilePhotoSize,
-    maxThumbnailSize: DEFAULT_AUTO_CONFIG.maxThumbnailSize,
-    roamingAllowed: DEFAULT_AUTO_CONFIG.roamingAllowed
-  };
-  private maxConcurrentDownloads: number = 3;
-  private currentDownloads: Set<string> = new Set(); // 正在下载的任务ID集合
-  private downloadQueue: DownloadTask[] = [];
+  private autoConfig: AutoDownloadConfig = createAutoDownloadConfig();
+
+  // 当前下载中的任务（不区分队列）
+  private currentDownloads: Set<string> = new Set();
 
   // 任务存储
   private tasks: Map<string, DownloadTask> = new Map();
-  private taskDeferreds: Map<string, Deferred<string>> = new Map(); // 等待完成的Promise
+  private taskDeferreds: Map<string, Deferred<string>> = new Map();
 
   // 网络状态
   private isWifiConnected: boolean = true;
@@ -108,26 +207,26 @@ export class FileDownloadService {
   private updateTimerId: number = -1;
   private readonly UPDATE_INTERVAL_MS = 100;
 
-  // ⭐ 当前活跃聊天上下文（用于优先级调整）
-  private currentActiveChatId: number | undefined = undefined;
-  private readonly CURRENT_CHAT_PRIORITY_BOOST = 10; // 当前聊天任务的优先级加成
-  
-  // ⭐ 头像下载特殊优先级（最高优先级，确保头像最先下载）
-  private readonly AVATAR_PRIORITY_BOOST = 5; // 头像下载的额外优先级加成
-  private readonly MAX_CONCURRENT_AVATAR_DOWNLOADS = 2; // 头像下载专用并发槽位
+  // ⭐ 可见性感知：记录各任务的可见状态
+  private visibleTasks: Set<string> = new Set();
+
+  // ⭐ 优先级递增指针（用于区分相同优先级的任务顺序）
+  private priorityIncreasePointer: number = 0;
 
   private constructor(context: common.Context) {
     this.tdApi = TdApiFactory.getInstance().createDefault();
     this.eventBus = EventBus.getInstance();
     this.networkMonitor = NetworkMonitor.getInstance();
     this.cacheService = CacheService.getInstance();
-    // 初始化 CacheService
+    this.smallFilesQueue = new FileLoaderPriorityQueue('smallFilesQueue', FileLoaderQueueType.SMALL);
+    this.largeFilesQueue = new FileLoaderPriorityQueue('largeFilesQueue', FileLoaderQueueType.LARGE);
+
     this.cacheService.initialize(context).catch((e: Error) => {
       hilog.error(0x0001, TAG, `CacheService init failed: ${e.message}`);
     });
     this.initNetworkMonitor();
     this.initTdLibEvents();
-    this.restoreTasksIfNeeded(); // 可选：恢复持久化任务
+    this.restoreTasksIfNeeded();
   }
 
   static getInstance(context?: common.Context): FileDownloadService {
@@ -137,46 +236,143 @@ export class FileDownloadService {
     return FileDownloadService.instance;
   }
 
+  // ==================== 优先级值转换（参考 Nagram FileLoader） ====================
+
   /**
-   * ⭐ 设置当前活跃聊天（用于下载优先级优化）
-   * 当用户进入某个聊天页面时调用，该聊天的下载任务将获得优先级加成
+   * 将内部优先级映射到 TDLib 的 1-32 范围（1 是最高优先级）
+   */
+  private mapToTDLibPriority(priorityType: DownloadPriority): number {
+    switch (priorityType) {
+      case DownloadPriority.STREAM:
+        return 1;
+      case DownloadPriority.HIGH:
+        return 2;
+      case DownloadPriority.NORMAL_UP:
+        return 3;
+      case DownloadPriority.NORMAL:
+        return 4;
+      case DownloadPriority.LOW:
+        return 8;
+      default:
+        return 4;
+    }
+  }
+
+  /**
+   * 将 DownloadPriority 转换为内部优先级值
+   */
+  private getPriorityValue(priorityType: DownloadPriority): number {
+    if (priorityType === DownloadPriority.STREAM) {
+      return Number.MAX_VALUE;
+    } else if (priorityType === DownloadPriority.HIGH) {
+      this.priorityIncreasePointer++;
+      return PRIORITY_VALUE_MAX + this.priorityIncreasePointer;
+    } else if (priorityType === DownloadPriority.NORMAL_UP) {
+      this.priorityIncreasePointer++;
+      return PRIORITY_VALUE_NORMAL + this.priorityIncreasePointer;
+    } else if (priorityType === DownloadPriority.NORMAL) {
+      return PRIORITY_VALUE_NORMAL;
+    } else {
+      return PRIORITY_VALUE_LOW;
+    }
+  }
+
+  /**
+   * ⭐ 设置任务可见性（用于动态优先级调整）
+   * 当任务对应的 UI 组件可见时调用，提升为 NORMAL
+   * 当不可见时，降级为 LOW
+   */
+  setTaskVisible(taskId: string, visible: boolean): void {
+    const task = this.tasks.get(taskId);
+    if (!task) return;
+
+    if (visible) {
+      this.visibleTasks.add(taskId);
+      // 可见时提升优先级到 NORMAL（如果不是更高）
+      if (task.priority < DownloadPriority.NORMAL) {
+        task.priority = DownloadPriority.NORMAL;
+        task.priorityValue = this.getPriorityValue(DownloadPriority.NORMAL);
+        this.updateQueue(task);
+        hilog.debug(0x0001, TAG, `Task ${taskId} priority upgraded to NORMAL (visible)`);
+      }
+    } else {
+      this.visibleTasks.delete(taskId);
+      // 不可见时降级到 LOW
+      if (task.priority > DownloadPriority.LOW) {
+        task.priority = DownloadPriority.LOW;
+        task.priorityValue = this.getPriorityValue(DownloadPriority.LOW);
+        this.updateQueue(task);
+        hilog.debug(0x0001, TAG, `Task ${taskId} priority downgraded to LOW (not visible)`);
+      }
+    }
+  }
+
+  /**
+   * ⭐ 设置当前活跃聊天（该聊天的下载任务获得 NORMAL_UP 优先级）
    */
   setCurrentActiveChat(chatId: number | undefined): void {
     if (this.currentActiveChatId !== chatId) {
       const oldChatId = this.currentActiveChatId;
       this.currentActiveChatId = chatId;
       hilog.info(0x0001, TAG, `Active chat changed: ${oldChatId} -> ${chatId}`);
-      
-      // ⭐ 重新排序下载队列，让新活跃聊天的任务优先
-      if (chatId !== undefined) {
-        this.prioritizeCurrentChatDownloads(chatId);
+
+      // 重新评估所有任务的优先级
+      for (const task of this.tasks.values()) {
+        if (task.status === DownloadStatus.DOWNLOADING || task.status === DownloadStatus.QUEUED) {
+          this.recalculateTaskPriority(task);
+        }
       }
+      this.checkAllQueues();
+    }
+  }
+
+  private currentActiveChatId: number | undefined = undefined;
+
+  /**
+   * 重新计算任务优先级
+   */
+  private recalculateTaskPriority(task: DownloadTask): void {
+    let basePriority = DownloadPriority.NORMAL;
+
+    // 1. 如果任务属于当前活跃聊天，提升为 NORMAL_UP
+    if (task.chatId && task.chatId === this.currentActiveChatId) {
+      basePriority = DownloadPriority.NORMAL_UP;
+    }
+
+    // 2. 如果任务不可见，降级为 LOW
+    if (!this.visibleTasks.has(task.id) && task.messageId) {
+      basePriority = DownloadPriority.LOW;
+    }
+
+    // 3. 头像不特殊处理，使用默认 NORMAL
+
+    if (task.priority !== basePriority) {
+      task.priority = basePriority;
+      task.priorityValue = this.getPriorityValue(basePriority);
+      this.updateQueue(task);
     }
   }
 
   /**
-   * ⭐ 优先处理当前聊天的下载任务
+   * 更新任务在队列中的位置
    */
-  private prioritizeCurrentChatDownloads(chatId: number): void {
-    let reprioritizedCount = 0;
-    
-    // 1. 提升队列中当前聊天任务的优先级
-    for (const task of this.downloadQueue) {
-      if (task.chatId === chatId && task.priority < DownloadPriority.URGENT) {
-        const newPriority = task.priority + this.CURRENT_CHAT_PRIORITY_BOOST;
-        task.priority = Math.min(newPriority, DownloadPriority.URGENT);
-        reprioritizedCount++;
-      }
+  private updateQueue(task: DownloadTask): void {
+    const queue = this.getQueueForTask(task);
+    queue.remove(task);
+    if (task.status === DownloadStatus.QUEUED || task.status === DownloadStatus.DOWNLOADING) {
+      queue.add(task);
     }
-    
-    // 2. 重新排序队列
-    if (reprioritizedCount > 0) {
-      this.reorderQueue();
-      hilog.info(0x0001, TAG, `Reprioritized ${reprioritizedCount} tasks for chat ${chatId}`);
+    this.checkAllQueues();
+  }
+
+  /**
+   * 获取任务对应的队列
+   */
+  private getQueueForTask(task: DownloadTask): FileLoaderPriorityQueue {
+    if (task.totalBytes > BIG_FILE_THRESHOLD) {
+      return this.largeFilesQueue;
     }
-    
-    // 3. 如果当前正在下载的任务不是当前聊天的，考虑暂停并切换
-    // 注意：这里不强制中断正在进行的下载，只是让新任务优先入队
+    return this.smallFilesQueue;
   }
 
   // ==================== 初始化 ====================
@@ -191,9 +387,9 @@ export class FileDownloadService {
   }
 
   private updateNetworkState(): void {
-    this.isWifiConnected = this.networkMonitor.isConnected(); // 简化处理
-    this.isCellularConnected = this.networkMonitor.isConnected(); // 需要根据实际 API 调整
-    this.isRoaming = false; // 默认非漫游，需要 NetworkMonitor 支持
+    this.isWifiConnected = this.networkMonitor.isConnected();
+    this.isCellularConnected = this.networkMonitor.isConnected();
+    this.isRoaming = false;
   }
 
   private initTdLibEvents(): void {
@@ -204,25 +400,20 @@ export class FileDownloadService {
     });
   }
 
-  /**
-   * 获取缓存的文件路径
-   */
+  // ==================== 缓存管理 ====================
+
   async getCachedPath(fileId: number): Promise<string | null> {
-    // 1. 先查内存缓存
     const cachedPath = this.filePathCache.get(fileId);
     if (cachedPath) {
       return cachedPath;
     }
 
-    // 2. 尝试从 TDLib 获取文件信息
     try {
       const fileInfo = await this.tdApi.getFile(fileId);
-      // File 类型有 local 属性，直接访问
       const local = fileInfo.local;
       if (local && local.is_downloading_completed === true) {
         const path = local.path;
         if (path && path.length > 0) {
-          // 缓存路径
           this.filePathCache.set(fileId, path);
           return path;
         }
@@ -234,52 +425,14 @@ export class FileDownloadService {
     return null;
   }
 
-  /**
-   * 转换 FileType 为 MediaType
-   */
-  private convertFileTypeToMediaType(fileType: FileType): MediaType {
-    switch (fileType) {
-      case FileType.IMAGE:
-      case FileType.PROFILE_PHOTO:
-      case FileType.WALLPAPER:
-      case FileType.THUMBNAIL:
-        return MediaType.IMAGE;
-      case FileType.VIDEO:
-      case FileType.VIDEO_NOTE:
-      case FileType.ANIMATION:
-        return MediaType.VIDEO;
-      case FileType.AUDIO:
-      case FileType.VOICE_NOTE:
-        return MediaType.AUDIO;
-      case FileType.STICKER:
-        // 贴纸可能为静态图片或动画，统一按图片处理
-        return MediaType.IMAGE;
-      default:
-        return MediaType.FILE;
-    }
-  }
-
-  /**
-   * 添加缓存文件记录
-   * 优化策略：不再重复存储二进制数据，只缓存文件元数据
-   * TDLib 已经管理本地文件存储，我们只需记录路径和元数据
-   */
   addCachedFile(fileId: number, filePath: string, fileType: FileType, fileSize?: number): void {
-    // 1. 更新内存缓存
     this.filePathCache.set(fileId, filePath);
-
-    // 2. 异步保存文件元数据到 CacheService（不存储二进制数据）
     this.saveFileMetadata(fileId, filePath, fileType, fileSize).catch((err: Error) => {
       hilog.warn(0x0001, TAG, `Failed to save file metadata for ${fileId}: ${err.message}`);
     });
-
     hilog.debug(0x0001, TAG, `Cached file ${fileId} metadata, path: ${filePath}`);
   }
 
-  /**
-   * 保存文件元数据到 storage_cache
-   * 只存储文件路径和元数据，不存储二进制数据
-   */
   private async saveFileMetadata(
     fileId: number,
     filePath: string,
@@ -287,10 +440,7 @@ export class FileDownloadService {
     fileSize?: number
   ): Promise<void> {
     try {
-      // 获取文件信息（如果未提供）
       let size = fileSize || 0;
-      let mimeType = '';
-
       if (size === 0) {
         try {
           const stat = await fs.stat(filePath);
@@ -300,55 +450,32 @@ export class FileDownloadService {
         }
       }
 
-      // 推断 MIME 类型
-      mimeType = this.inferMimeType(filePath, fileType);
-
-      // 通过 CacheService 保存媒体元数据（不读取文件内容）
       const metadata: MediaMetadata = {
         fileId: fileId.toString(),
         localPath: filePath,
         fileType: this.convertFileTypeToString(fileType),
         size: size,
-        mimeType: mimeType,
+        mimeType: this.inferMimeType(filePath, fileType),
         isDownloaded: true,
         downloadProgress: 100
       };
       await this.cacheService.saveMediaMetadata(metadata);
-
       hilog.debug(0x0001, TAG, `Saved file ${fileId} metadata to CacheService`);
     } catch (error) {
       hilog.warn(0x0001, TAG, `Failed to save file metadata: ${JSON.stringify(error)}`);
     }
   }
 
-  /**
-   * 推断 MIME 类型
-   */
   private inferMimeType(filePath: string, fileType: FileType): string {
     const ext = filePath.split('.').pop()?.toLowerCase() || '';
-
     const mimeMap: Record<string, string> = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'mp4': 'video/mp4',
-      'mov': 'video/quicktime',
-      'mp3': 'audio/mpeg',
-      'ogg': 'audio/ogg',
-      'oga': 'audio/ogg',
-      'pdf': 'application/pdf',
-      'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'txt': 'text/plain'
+      'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+      'gif': 'image/gif', 'webp': 'image/webp', 'mp4': 'video/mp4',
+      'mov': 'video/quicktime', 'mp3': 'audio/mpeg', 'ogg': 'audio/ogg',
+      'oga': 'audio/ogg', 'pdf': 'application/pdf', 'txt': 'text/plain'
     };
+    if (mimeMap[ext]) return mimeMap[ext];
 
-    if (mimeMap[ext]) {
-      return mimeMap[ext];
-    }
-
-    // 根据 FileType 推断
     switch (fileType) {
       case FileType.IMAGE:
       case FileType.PROFILE_PHOTO:
@@ -369,9 +496,6 @@ export class FileDownloadService {
     }
   }
 
-  /**
-   * 转换 FileType 为字符串
-   */
   private convertFileTypeToString(fileType: FileType): string {
     switch (fileType) {
       case FileType.IMAGE: return 'image';
@@ -387,17 +511,11 @@ export class FileDownloadService {
     }
   }
 
-  /**
-   * 清除文件缓存
-   */
   clearCachedFile(fileId: number): void {
     this.filePathCache.delete(fileId);
     hilog.debug(0x0001, TAG, `Cleared cache for file ${fileId}`);
   }
 
-  /**
-   * 清空所有缓存
-   */
   clearAllCachedFiles(): void {
     this.filePathCache.clear();
     hilog.info(0x0001, TAG, 'Cleared all file caches');
@@ -406,14 +524,21 @@ export class FileDownloadService {
   // ==================== 公共 API ====================
 
   /**
-   * 下载文件（支持优先级动态提升）
+   * 下载文件
+   * @param fileId 文件ID
+   * @param type 文件类型
+   * @param priority 下载优先级（默认 NORMAL）
+   * @param messageId 关联消息ID（用于可见性感知）
+   * @param chatId 关联聊天ID（用于活跃聊天优先级）
+   * @param fileSize 文件大小（用于队列选择，如未提供会查询）
    */
   async downloadFile(
     fileId: number,
     type: FileType,
     priority: DownloadPriority = DownloadPriority.NORMAL,
     messageId?: number,
-    chatId?: number
+    chatId?: number,
+    fileSize?: number
   ): Promise<string> {
     // 1. 检查缓存
     const cachedPath = await this.getCachedPath(fileId);
@@ -427,67 +552,71 @@ export class FileDownloadService {
 
     // 2. 如果任务已存在
     if (task) {
-      // 已完成：直接返回路径
       if (task.status === DownloadStatus.COMPLETED && task.localPath) {
         return task.localPath;
       }
-      // 下载中或队列中：提升优先级
       if (task.status === DownloadStatus.DOWNLOADING || task.status === DownloadStatus.QUEUED) {
         if (task.priority < priority) {
           task.priority = priority;
-          this.reorderQueue(); // 重新排序队列
+          task.priorityValue = this.getPriorityValue(priority);
+          this.updateQueue(task);
           hilog.info(0x0001, TAG, `Priority upgraded for ${fileId} to ${priority}`);
         }
-        // 等待现有任务完成
         const deferred = this.taskDeferreds.get(taskId);
         if (deferred) {
           return deferred.promise;
         }
       }
-      // 暂停状态：可以恢复，同样提升优先级
       if (task.status === DownloadStatus.PAUSED) {
         task.priority = priority;
-        this.resumeDownload(fileId); // 自动恢复
+        task.priorityValue = this.getPriorityValue(priority);
+        this.resumeDownload(fileId);
         const deferred = this.taskDeferreds.get(taskId);
         if (deferred) return deferred.promise;
       }
     }
 
     // 3. 创建新任务
-    const fileSize = await this.getFileSize(fileId);
+    const actualFileSize = fileSize || await this.getFileSize(fileId);
     const fileName = await this.getFileName(fileId);
+
+    // ⭐ 根据活跃聊天调整优先级
+    let finalPriority = priority;
+    if (chatId && chatId === this.currentActiveChatId && priority < DownloadPriority.NORMAL_UP) {
+      finalPriority = DownloadPriority.NORMAL_UP;
+    }
+
     task = {
       id: taskId,
       fileId,
       type,
-      priority,
+      priority: finalPriority,
+      priorityValue: this.getPriorityValue(finalPriority),
       status: DownloadStatus.PENDING,
       progress: 0,
       downloadedBytes: 0,
-      totalBytes: fileSize,
+      totalBytes: actualFileSize,
       createTime: Date.now(),
       messageId,
       chatId,
       fileName,
-      formattedSize: FileSizeFormatter.format(fileSize)
+      formattedSize: FileSizeFormatter.format(actualFileSize)
     };
     this.tasks.set(taskId, task);
 
-    // 4. 检查网络策略（不符合则进入暂停，不抛错）
+    // 4. 检查网络策略
     if (!this.shouldAutoDownload(task)) {
       task.status = DownloadStatus.PAUSED;
       const pausedData: DownloadPausedData = { taskId, fileId, reason: 'network_policy' };
       this.emitEvent(DownloadEvent.PAUSED, pausedData);
-      // 仍返回一个 Promise，但会等待网络恢复后自动开始
       const deferred = new Deferred<string>();
       this.taskDeferreds.set(taskId, deferred);
-      // 不加入队列，等网络恢复时再入队
       return deferred.promise;
     }
 
     // 5. 检查磁盘空间
     const freeSpace = await this.getFreeDiskSpace();
-    if (freeSpace < fileSize * 1.1) {
+    if (freeSpace < actualFileSize * 1.1) {
       task.status = DownloadStatus.FAILED;
       task.error = 'Insufficient disk space';
       const failedData: DownloadFailedData = { taskId, fileId, error: task.error };
@@ -499,12 +628,12 @@ export class FileDownloadService {
     this.enqueueTask(task);
     const deferred = new Deferred<string>();
     this.taskDeferreds.set(taskId, deferred);
-    this.scheduleDownloads();
+    this.checkAllQueues();
     return deferred.promise;
   }
 
   /**
-   * 预下载多个文件
+   * 预下载多个文件（后台加载，使用 LOW 优先级）
    */
   async preloadFiles(fileIds: number[], type: FileType): Promise<void> {
     const promises = fileIds.map(id =>
@@ -515,33 +644,23 @@ export class FileDownloadService {
     await Promise.all(promises);
   }
 
-  /**
-   * 暂停下载
-   */
   async pauseDownload(fileId: number): Promise<void> {
     const taskId = this.getTaskId(fileId);
     const task = this.tasks.get(taskId);
     if (!task || task.status !== DownloadStatus.DOWNLOADING) return;
 
     try {
-      // TDLib API 不支持 pauseFileDownload，使用 cancelDownloadFile 替代
       await this.tdApi.cancelDownloadFile(fileId, false);
-      // 注意：TDLib 会触发 updateFile，其中 local.is_downloading_active 变为 false
-      // 我们在 handleFileUpdate 中处理状态变更
     } catch (error) {
       hilog.error(0x0001, TAG, `Pause failed for ${fileId}: ${JSON.stringify(error)}`);
     }
   }
 
-  /**
-   * 恢复下载（断点续传）
-   */
   async resumeDownload(fileId: number): Promise<void> {
     const taskId = this.getTaskId(fileId);
     const task = this.tasks.get(taskId);
     if (!task || task.status !== DownloadStatus.PAUSED) return;
 
-    // 重新检查网络策略
     if (!this.shouldAutoDownload(task)) {
       hilog.debug(0x0001, TAG, `Cannot resume ${fileId}: network policy not met`);
       return;
@@ -549,30 +668,24 @@ export class FileDownloadService {
 
     task.status = DownloadStatus.PENDING;
     this.enqueueTask(task);
-    this.scheduleDownloads();
+    this.checkAllQueues();
   }
 
-  /**
-   * 取消下载
-   */
   async cancelDownload(fileId: number): Promise<void> {
     const taskId = this.getTaskId(fileId);
     const task = this.tasks.get(taskId);
     if (!task) return;
 
     if (task.status === DownloadStatus.DOWNLOADING) {
-      await this.tdApi.cancelDownloadFile(fileId, false); // priority, synchronous
+      await this.tdApi.cancelDownloadFile(fileId, false);
       this.currentDownloads.delete(taskId);
     }
     this.cleanupTask(taskId, false);
     const cancelledData: DownloadCancelledData = { taskId, fileId };
     this.emitEvent(DownloadEvent.CANCELLED, cancelledData);
-    this.scheduleDownloads();
+    this.checkAllQueues();
   }
 
-  /**
-   * 根据消息 ID 取消所有相关下载（消息删除时调用）
-   */
   async cancelDownloadsForMessage(messageId: number): Promise<void> {
     const tasksToCancel = Array.from(this.tasks.values())
       .filter(task => task.messageId === messageId);
@@ -582,9 +695,6 @@ export class FileDownloadService {
     hilog.info(0x0001, TAG, `Cancelled ${tasksToCancel.length} downloads for message ${messageId}`);
   }
 
-  /**
-   * 根据聊天 ID 取消所有下载（可选）
-   */
   async cancelDownloadsForChat(chatId: number): Promise<void> {
     const tasksToCancel = Array.from(this.tasks.values())
       .filter(task => task.chatId === chatId);
@@ -593,43 +703,26 @@ export class FileDownloadService {
     }
   }
 
-  /**
-   * 获取任务信息
-   */
   getTask(fileId: number): DownloadTask | undefined {
     return this.tasks.get(this.getTaskId(fileId));
   }
 
-  /**
-   * 获取所有任务
-   */
   getAllTasks(): DownloadTask[] {
     return Array.from(this.tasks.values());
   }
 
-  /**
-   * 更新自动下载配置
-   */
   updateAutoDownloadConfig(config: Partial<AutoDownloadConfig>): void {
-    // ArkTS 不支持展开运算符，需要手动合并属性
-    // 基础媒体类型
     if (config.images !== undefined) this.autoConfig.images = config.images;
     if (config.videos !== undefined) this.autoConfig.videos = config.videos;
     if (config.audios !== undefined) this.autoConfig.audios = config.audios;
     if (config.documents !== undefined) this.autoConfig.documents = config.documents;
-
-    // 消息类型
     if (config.stickers !== undefined) this.autoConfig.stickers = config.stickers;
     if (config.animations !== undefined) this.autoConfig.animations = config.animations;
     if (config.voiceNotes !== undefined) this.autoConfig.voiceNotes = config.voiceNotes;
     if (config.videoNotes !== undefined) this.autoConfig.videoNotes = config.videoNotes;
-
-    // 特殊类型
     if (config.profilePhotos !== undefined) this.autoConfig.profilePhotos = config.profilePhotos;
     if (config.wallpapers !== undefined) this.autoConfig.wallpapers = config.wallpapers;
     if (config.thumbnails !== undefined) this.autoConfig.thumbnails = config.thumbnails;
-
-    // 文件大小限制
     if (config.maxImageSize !== undefined) this.autoConfig.maxImageSize = config.maxImageSize;
     if (config.maxVideoSize !== undefined) this.autoConfig.maxVideoSize = config.maxVideoSize;
     if (config.maxAudioSize !== undefined) this.autoConfig.maxAudioSize = config.maxAudioSize;
@@ -640,10 +733,8 @@ export class FileDownloadService {
     if (config.maxVideoNoteSize !== undefined) this.autoConfig.maxVideoNoteSize = config.maxVideoNoteSize;
     if (config.maxProfilePhotoSize !== undefined) this.autoConfig.maxProfilePhotoSize = config.maxProfilePhotoSize;
     if (config.maxThumbnailSize !== undefined) this.autoConfig.maxThumbnailSize = config.maxThumbnailSize;
-
     if (config.roamingAllowed !== undefined) this.autoConfig.roamingAllowed = config.roamingAllowed;
 
-    // 网络策略变更，重新评估所有暂停任务
     for (const task of this.tasks.values()) {
       if (task.status === DownloadStatus.PAUSED && this.shouldAutoDownload(task)) {
         this.resumeDownload(task.fileId);
@@ -651,24 +742,13 @@ export class FileDownloadService {
     }
   }
 
-  /**
-   * 设置最大并发数
-   */
-  setMaxConcurrentDownloads(max: number): void {
-    this.maxConcurrentDownloads = Math.max(1, Math.min(10, max));
-    this.scheduleDownloads();
-  }
-
-  /**
-   * 注册业务事件监听
-   */
   on(event: DownloadEvent, handler: (data?: Object) => void): void {
     this.downloadEventBus.on(event, handler);
   }
 
   off(event: DownloadEvent, handler: (data?: Object) => void): void {
-    // EventBus 的 off 需要传入 handler，这里简化处理
     hilog.debug(0x0001, TAG, `Unregister listener for event: ${event}`);
+    this.downloadEventBus.off(event, handler);
   }
 
   // ==================== 私有方法 ====================
@@ -680,7 +760,6 @@ export class FileDownloadService {
   private async getFileName(fileId: number): Promise<string> {
     try {
       const fileInfo = await this.tdApi.getFile(fileId);
-      // File 类型有 remote 属性
       const remote = fileInfo.remote;
       return remote?.unique_id || `file_${fileId}`;
     } catch {
@@ -691,7 +770,6 @@ export class FileDownloadService {
   private async getFileSize(fileId: number): Promise<number> {
     try {
       const fileInfo = await this.tdApi.getFile(fileId);
-      // File 类型有 size 属性
       return fileInfo.size || 0;
     } catch {
       return 0;
@@ -700,13 +778,12 @@ export class FileDownloadService {
 
   private async getFreeDiskSpace(): Promise<number> {
     try {
-      const path = '/data/storage/el2/base/haps/entry'; // 应用沙箱路径
-      // HarmonyOS 使用 statfs.getFreeSize 获取可用空间
+      const path = '/data/storage/el2/base/haps/entry';
       const free = await statfs.getFreeSize(path);
       return free;
     } catch (error) {
       hilog.error(0x0001, TAG, 'Failed to get disk space');
-      return 1024 * 1024 * 1024; // fallback 1GB
+      return 1024 * 1024 * 1024;
     }
   }
 
@@ -756,12 +833,11 @@ export class FileDownloadService {
         break;
       case FileType.WALLPAPER:
         policy = this.autoConfig.wallpapers;
-        maxSize = this.autoConfig.maxDocumentSize; // 壁纸使用文档大小限制
+        maxSize = this.autoConfig.maxDocumentSize;
         break;
       case FileType.SECRET:
       case FileType.SECRET_THUMBNAIL:
       case FileType.SECURE:
-        // 安全类型文件默认不自动下载，需要用户手动确认
         policy = NetworkPolicy.NEVER;
         maxSize = 0;
         break;
@@ -778,72 +854,46 @@ export class FileDownloadService {
     return true;
   }
 
+  /**
+   * ⭐ 将任务加入对应队列
+   */
   private enqueueTask(task: DownloadTask): void {
-    // 移除可能已存在的相同任务（避免重复入队）
-    const existingIndex = this.downloadQueue.findIndex(t => t.id === task.id);
-    if (existingIndex !== -1) this.downloadQueue.splice(existingIndex, 1);
-    
-    // ⭐ 头像下载特殊处理：给予最高优先级
-    if (task.type === FileType.PROFILE_PHOTO) {
-      const newPriority = task.priority + this.AVATAR_PRIORITY_BOOST;
-      task.priority = Math.min(newPriority, DownloadPriority.URGENT);
-      hilog.debug(0x0001, TAG, `Avatar task ${task.id} boosted to priority ${task.priority}`);
-    }
-    
-    // ⭐ 如果任务属于当前活跃聊天，提升优先级
-    if (task.chatId && task.chatId === this.currentActiveChatId && task.priority < DownloadPriority.URGENT) {
-      const newPriority = task.priority + this.CURRENT_CHAT_PRIORITY_BOOST;
-      task.priority = Math.min(newPriority, DownloadPriority.URGENT);
-      hilog.debug(0x0001, TAG, `Priority boosted for task ${task.id} in active chat ${task.chatId}`);
-    }
-    
-    // 按优先级插入
-    const index = this.downloadQueue.findIndex(t => t.priority < task.priority);
-    if (index === -1) this.downloadQueue.push(task);
-    else this.downloadQueue.splice(index, 0, task);
+    const queue = this.getQueueForTask(task);
+    queue.add(task);
     task.status = DownloadStatus.QUEUED;
     const queuedData: DownloadQueuedData = { taskId: task.id, fileId: task.fileId };
     this.emitEvent(DownloadEvent.QUEUED, queuedData);
   }
 
-  private reorderQueue(): void {
-    this.downloadQueue.sort((a, b) => b.priority - a.priority);
+  /**
+   * ⭐ 检查所有队列并调度下载
+   */
+  private checkAllQueues(): void {
+    // 检查小文件队列
+    const smallResult = this.smallFilesQueue.checkLoadingOperations();
+    this.applyQueueResult(smallResult);
+
+    // 检查大文件队列
+    const largeResult = this.largeFilesQueue.checkLoadingOperations();
+    this.applyQueueResult(largeResult);
   }
 
-  private scheduleDownloads(): void {
-    // ⭐ 统计当前正在下载的头像任务数量
-    let currentAvatarDownloads = 0;
-    for (const taskId of this.currentDownloads) {
-      const task = this.tasks.get(taskId);
-      if (task && task.type === FileType.PROFILE_PHOTO) {
-        currentAvatarDownloads++;
+  /**
+   * 应用队列调度结果
+   */
+  private applyQueueResult(result: QueueCheckResult): void {
+    // 启动新任务
+    for (const task of result.start) {
+      if (!this.currentDownloads.has(task.id)) {
+        this.startDownload(task);
       }
     }
-    
-    // ⭐ 优先调度头像下载任务（插队机制）
-    // 如果还有头像在等待队列中，优先启动它们
-    const avatarTasksInQueue = this.downloadQueue.filter(t => t.type === FileType.PROFILE_PHOTO && t.status !== DownloadStatus.PAUSED);
-    
-    // 先处理头像任务（最多占用 MAX_CONCURRENT_AVATAR_DOWNLOADS 个槽位）
-    while (currentAvatarDownloads < this.MAX_CONCURRENT_AVATAR_DOWNLOADS && 
-           avatarTasksInQueue.length > 0 && 
-           this.currentDownloads.size < this.maxConcurrentDownloads) {
-      const avatarTask = avatarTasksInQueue.shift()!;
-      // 从队列中移除
-      const index = this.downloadQueue.findIndex(t => t.id === avatarTask.id);
-      if (index !== -1) {
-        this.downloadQueue.splice(index, 1);
+
+    // 暂停低优先级任务
+    for (const task of result.pause) {
+      if (this.currentDownloads.has(task.id)) {
+        this.pauseDownload(task.fileId);
       }
-      this.startDownload(avatarTask);
-      currentAvatarDownloads++;
-      hilog.debug(0x0001, TAG, `Avatar task ${avatarTask.id} started with priority scheduling`);
-    }
-    
-    // 处理其他类型的下载任务
-    while (this.currentDownloads.size < this.maxConcurrentDownloads && this.downloadQueue.length > 0) {
-      const task = this.downloadQueue.shift()!;
-      if (task.status === DownloadStatus.PAUSED) continue;
-      this.startDownload(task);
     }
   }
 
@@ -855,11 +905,10 @@ export class FileDownloadService {
     this.emitEvent(DownloadEvent.START, startData);
 
     try {
-      // 真正支持断点续传：传入已下载的字节数作为 offset
       const offset = task.downloadedBytes;
-      // limit = 0 表示下载剩余全部
-      await this.tdApi.downloadFile(task.fileId, task.priority, offset, 0, false);
-      // 实际完成由 updateFile 事件驱动
+      // ⭐ 将内部优先级映射到 TDLib 的 1-32 范围（1 是最高）
+      const tdlibPriority = this.mapToTDLibPriority(task.priority);
+      await this.tdApi.downloadFile(task.fileId, tdlibPriority, offset, 0, false);
     } catch (error) {
       hilog.error(0x0001, TAG, `Start download failed for ${task.fileId}: ${JSON.stringify(error)}`);
       task.status = DownloadStatus.FAILED;
@@ -867,7 +916,7 @@ export class FileDownloadService {
       const failedData: DownloadFailedData = { taskId: task.id, fileId: task.fileId, error: task.error };
       this.emitEvent(DownloadEvent.FAILED, failedData);
       this.cleanupTask(task.id, true);
-      this.scheduleDownloads();
+      this.checkAllQueues();
     }
   }
 
@@ -882,18 +931,15 @@ export class FileDownloadService {
     const local = file.local as Record<string, Object>;
     if (!local) return;
 
-    // 下载中
     if (local.is_downloading_active === true) {
       const downloaded = local.downloaded_size as number;
       const total = file.size as number;
-      // 更新已下载字节（用于断点续传）
       task.downloadedBytes = downloaded;
       task.totalBytes = total;
       task.progress = total > 0 ? downloaded / total : 0;
       task.formattedDownloaded = FileSizeFormatter.format(downloaded);
       task.formattedTotal = FileSizeFormatter.format(total);
 
-      // 计算速度
       const elapsed = (Date.now() - (task.startTime || Date.now())) / 1000;
       const speed = elapsed > 0 ? downloaded / elapsed : 0;
       const remaining = speed > 0 ? (total - downloaded) / speed : 0;
@@ -911,17 +957,14 @@ export class FileDownloadService {
         formattedTimeLeft: this.formatTimeLeft(remaining)
       };
       this.throttleProgressUpdate(progressData);
-    }
-    // 下载完成
-    else if (local.is_downloading_completed === true) {
+    } else if (local.is_downloading_completed === true) {
       task.status = DownloadStatus.COMPLETED;
       task.progress = 1;
       task.downloadedBytes = task.totalBytes;
       task.localPath = local.path as string;
       task.endTime = Date.now();
       const durationMs = (task.endTime - (task.startTime || task.endTime));
-      
-      // 添加缓存记录（传入文件大小）
+
       this.addCachedFile(task.fileId, task.localPath, task.type, task.totalBytes);
 
       const completeData: DownloadCompleteData = {
@@ -933,20 +976,15 @@ export class FileDownloadService {
       };
       this.emitEvent(DownloadEvent.COMPLETE, completeData);
 
-      // 通知等待的 Promise
       const deferred = this.taskDeferreds.get(task.id);
       if (deferred) {
         deferred.resolve(task.localPath);
         this.taskDeferreds.delete(task.id);
       }
       this.cleanupTask(task.id, true);
-      this.scheduleDownloads();
-    }
-    // 暂停或失败
-    else if (local.is_downloading_active === false && !local.is_downloading_completed) {
-      // 检查是否有错误
+      this.checkAllQueues();
+    } else if (local.is_downloading_active === false && !local.is_downloading_completed) {
       if (local.can_be_deleted === false && local.path === '') {
-        // 可能失败
         task.status = DownloadStatus.FAILED;
         task.error = local.download_error as string || 'Download failed';
         const failedData: DownloadFailedData = { taskId: task.id, fileId: task.fileId, error: task.error };
@@ -958,13 +996,12 @@ export class FileDownloadService {
         }
         this.cleanupTask(task.id, true);
       } else if (task.status === DownloadStatus.DOWNLOADING) {
-        // 主动暂停
         task.status = DownloadStatus.PAUSED;
         const pausedData: DownloadPausedData = { taskId: task.id, fileId: task.fileId, reason: 'user' };
         this.emitEvent(DownloadEvent.PAUSED, pausedData);
         this.cleanupTask(task.id, true);
       }
-      this.scheduleDownloads();
+      this.checkAllQueues();
     }
   }
 
@@ -985,12 +1022,14 @@ export class FileDownloadService {
     if (decrementConcurrent && this.currentDownloads.has(taskId)) {
       this.currentDownloads.delete(taskId);
     }
-    // 注意：不删除 tasks 中的任务，保留用于查询和断点续传
-    // 如果希望完全清理，可以调用 cancelDownload
+    const task = this.tasks.get(taskId);
+    if (task) {
+      const queue = this.getQueueForTask(task);
+      queue.remove(task);
+    }
   }
 
   private onNetworkChanged(oldWifi: boolean, oldCellular: boolean): void {
-    // 对于所有暂停的任务，重新评估是否满足网络策略
     for (const task of this.tasks.values()) {
       if (task.status === DownloadStatus.PAUSED && this.shouldAutoDownload(task)) {
         this.resumeDownload(task.fileId);
@@ -998,7 +1037,6 @@ export class FileDownloadService {
         this.pauseDownload(task.fileId);
       }
     }
-    this.scheduleDownloads();
   }
 
   private formatSpeed(bytesPerSec: number): string {
@@ -1026,13 +1064,11 @@ export class FileDownloadService {
     this.downloadEventBus.emit(event, data);
   }
 
-  // ==================== 可选：任务持久化 ====================
   private async persistTasks(): Promise<void> {
-    // 将 tasks 中未完成的任务转为 PersistedDownloadTask 存储
     const allTasks = Array.from(this.tasks.values());
     const filteredTasks = allTasks.filter(t => t.status !== DownloadStatus.COMPLETED);
     const pending: PersistedDownloadTask[] = [];
-    
+
     for (const t of filteredTasks) {
       const persistedTask: PersistedDownloadTask = {
         id: t.id,
@@ -1051,30 +1087,108 @@ export class FileDownloadService {
       };
       pending.push(persistedTask);
     }
-    
-    // 使用 preferences 或 数据库存储
-    // await Preferences.put(STORAGE_KEY, JSON.stringify(pending));
   }
 
   private async restoreTasksIfNeeded(): Promise<void> {
-    // 读取存储，重新创建任务（但不会自动启动，除非网络策略允许）
     // 简化实现，略
   }
 
-  // ==================== 清理 ====================
   public cleanup(): void {
     if (this.updateTimerId !== -1) clearTimeout(this.updateTimerId);
     for (const task of this.tasks.values()) {
       if (task.status === DownloadStatus.DOWNLOADING) {
-        this.tdApi.cancelDownloadFile(task.fileId, false); // priority, synchronous
+        this.tdApi.cancelDownloadFile(task.fileId, false);
       }
     }
     this.tasks.clear();
-    this.downloadQueue = [];
+    this.smallFilesQueue = new FileLoaderPriorityQueue('smallFilesQueue', FileLoaderQueueType.SMALL);
+    this.largeFilesQueue = new FileLoaderPriorityQueue('largeFilesQueue', FileLoaderQueueType.LARGE);
     this.taskDeferreds.clear();
     this.pendingProgressEvents.clear();
     this.currentDownloads.clear();
-    // EventBus 没有 removeAllListeners，这里简化处理
+    this.visibleTasks.clear();
     hilog.info(0x0001, TAG, 'Service cleaned up');
+  }
+
+  // ==================== 头像下载方法（从 CoreService 迁移） ====================
+
+  /**
+   * 触发聊天头像异步下载
+   * @param fileId 文件ID
+   * @param chatId 聊天ID
+   */
+  public async triggerChatAvatarDownload(fileId: number, chatId: number): Promise<void> {
+    try {
+      hilog.info(0x0001, TAG, `Triggering chat avatar download for chat ${chatId}, fileId: ${fileId}`);
+      
+      const path = await this.downloadFile(
+        fileId,
+        FileType.PROFILE_PHOTO,
+        DownloadPriority.NORMAL,
+        undefined,
+        chatId
+      );
+      
+      hilog.info(0x0001, TAG, `✅ Chat avatar downloaded for chat ${chatId}: ${path}`);
+      
+      // 从文件读取数据并缓存到 CacheService
+      try {
+        const file = await fs.open(path, fs.OpenMode.READ_ONLY);
+        const stat = await fs.stat(path);
+        const buffer = new ArrayBuffer(stat.size);
+        await fs.read(file.fd, buffer, { offset: 0, length: stat.size });
+        await fs.close(file);
+        
+        await this.cacheService.cacheAvatar(chatId, path, buffer);
+        hilog.info(0x0001, TAG, `✅ Chat avatar cached for chat ${chatId}`);
+      } catch (cacheErr) {
+        hilog.warn(0x0001, TAG, `Failed to cache chat avatar: ${JSON.stringify(cacheErr)}`);
+      }
+      
+      // 发布聊天头像下载完成事件
+      const eventData: Record<string, Object> = new Object() as Record<string, Object>;
+      eventData['fileId'] = fileId as Object;
+      eventData['path'] = path as Object;
+      eventData['chatId'] = chatId as Object;
+      this.eventBus.emit('file:chatAvatarDownloaded', eventData);
+      
+    } catch (error) {
+      hilog.error(0x0001, TAG, `❌ Trigger chat avatar download error: ${JSON.stringify(error)}`);
+    }
+  }
+
+  /**
+   * 触发用户头像异步下载
+   * @param fileId 文件ID
+   * @param userId 用户ID
+   * @param associatedChatId 关联的私聊ID（用于优先级优化）
+   */
+  public async triggerUserAvatarDownload(fileId: number, userId: number, associatedChatId?: number): Promise<void> {
+    try {
+      hilog.info(0x0001, TAG, `Triggering user avatar download for user ${userId}, fileId: ${fileId}`);
+      
+      const path = await this.downloadFile(
+        fileId,
+        FileType.PROFILE_PHOTO,
+        DownloadPriority.HIGH,
+        undefined,
+        associatedChatId
+      );
+      
+      hilog.info(0x0001, TAG, `✅ User avatar downloaded for user ${userId}: ${path}`);
+      
+      // 添加 file:// 前缀
+      const avatarPath = path.startsWith('file://') ? path : 'file://' + path;
+      
+      // 发布用户头像下载完成事件
+      const eventData: Record<string, Object> = new Object() as Record<string, Object>;
+      eventData['fileId'] = fileId as Object;
+      eventData['path'] = avatarPath as Object;
+      eventData['userId'] = userId as Object;
+      this.eventBus.emit('file:userAvatarDownloaded', eventData);
+      
+    } catch (error) {
+      hilog.error(0x0001, TAG, `❌ Trigger user avatar download error: ${JSON.stringify(error)}`);
+    }
   }
 }

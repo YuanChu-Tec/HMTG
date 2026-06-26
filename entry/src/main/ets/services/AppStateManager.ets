@@ -7,10 +7,10 @@
  */
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { EventBus } from '../utils/event/EventBus';
-import { ThemeService } from './business/ThemeService';
-import { CoreService } from './business/CoreService';
-import { UpdateService } from './business/UpdateService';
-import { FileDownloadService } from './business/FileDownloadService';
+import { ThemeService } from './business/theme/ChatThemeController';
+import { CoreService } from './business/messages/MessagesController';
+import { UpdateService } from './business/update/UpdateService';
+import { FileDownloadService } from './business/files/DownloadController';
 import { TDLibClient } from './core/tdlib/TDLibClient';
 import { TDLibAuthManager } from './core/tdlib/TDLibAuthManager';
 import type { common } from '@kit.AbilityKit';

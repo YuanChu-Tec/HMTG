@@ -1,4 +1,4 @@
-import { TDLibClient } from '../../core/tdlib/TDLibClient';
+import { TDLibClient } from '../../tdlib/TDLibClient';
 import { TDLibApi } from '../TDLibApi';
 
 import { hilog } from '@kit.PerformanceAnalysisKit';

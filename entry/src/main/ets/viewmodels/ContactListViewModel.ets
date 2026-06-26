@@ -3,10 +3,10 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { promptAction } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { EventBus } from '../utils/event/EventBus';
-import { CoreService } from '../services/business/CoreService';
+import { CoreService } from '../services/business/messages/MessagesController';
 import { Contact, SyncStatus, Usernames, UserStatus, UserStatusOnline } from '../models/TDLibData';
 import { ErrorHandler } from '../utils/error/ErrorHandler';
-import { FileDownloadService } from '../services/business/FileDownloadService';
+import { FileDownloadService } from '../services/business/files/DownloadController';
 import { FileType, DownloadPriority } from '../models/TDLibData';
 
 const TAG = 'ContactListViewModel';

@@ -10,7 +10,7 @@
  */
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Chat, ChatType, MessageType, MessageStatus, GroupEventType, Message, UserInfo, UserStatus, UserStatusOnline } from '../models/TDLibData';
-import { CoreService } from '../services/business/CoreService';
+import { CoreService } from '../services/business/messages/MessagesController';
 import { EventBus } from '../utils/event/EventBus';
 
 const TAG = 'ChatListViewModel';

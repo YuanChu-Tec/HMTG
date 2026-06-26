@@ -1,6 +1,6 @@
 // ProfilePageViewModel.ets
-import { CoreService } from '../services/business/CoreService';
-import type { FormattedText, birthdate } from '../services/api/factory/tdlib-types';
+import { CoreService } from '../services/business/messages/MessagesController';
+import type { FormattedText, birthdate } from '../services/core/api/factory/tdlib-types';
 import { EventBus } from '../utils/event/EventBus';
 import { LogService } from '../utils/log/LogService';
 import { ErrorHandler } from '../utils/error/ErrorHandler';
@@ -10,7 +10,7 @@ import { QRCodeGenerator } from '../utils/QRCodeGenerator';
 import { image } from '@kit.ImageKit';
 import { promptAction } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { FileDownloadService } from '../services/business/FileDownloadService';
+import { FileDownloadService } from '../services/business/files/DownloadController';
 import { FileType, DownloadPriority } from '../models/TDLibData';
 
 export interface UserInfo {
@@ -313,7 +313,7 @@ export class ProfilePageViewModel {
     this.fileDownloadService.downloadFile(
       fileId,
       FileType.PROFILE_PHOTO,
-      DownloadPriority.URGENT
+      DownloadPriority.HIGH
     ).then(async (path: string) => {
       hilog.info(0x0001, 'ProfileVM', `✅ Avatar downloaded: ${path}`);
       
@@ -365,7 +365,8 @@ export class ProfilePageViewModel {
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
     this.eventBus.on('core:userUpdated', this.handleCoreUserUpdate.bind(this));
     this.eventBus.on('core:userFullInfoUpdated', this.handleCoreUserFullInfo.bind(this));
-    this.eventBus.on('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    // ⭐ 使用 FileDownloadService 事件替代 CoreService 事件
+    this.eventBus.on('file:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
     this.eventBus.on('core:optionUpdated', this.handleCoreOptionUpdated.bind(this));
     this.eventBus.on('core:passwordStateUpdated', this.handleCorePasswordStateUpdated.bind(this));
@@ -375,7 +376,7 @@ export class ProfilePageViewModel {
   private unregisterEventListeners(): void {
     this.eventBus.off('core:userUpdated', this.handleCoreUserUpdate.bind(this));
     this.eventBus.off('core:userFullInfoUpdated', this.handleCoreUserFullInfo.bind(this));
-    this.eventBus.off('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.off('file:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.off('core:optionUpdated', this.handleCoreOptionUpdated.bind(this));
     this.eventBus.off('core:passwordStateUpdated', this.handleCorePasswordStateUpdated.bind(this));
     this.eventBus.off('core:connectedWebsitesUpdated', this.handleCoreConnectedWebsitesUpdated.bind(this));

@@ -3,14 +3,15 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { promptAction } from '@kit.ArkUI';
 import { picker } from '@kit.CoreFileKit';
 import { SortedHashMap } from '../utils/SortedHashMap'; // ⭐ 参考 Gramony-dev 使用 SortedHashMap
-import { CoreService } from '../services/business/CoreService';
-import { FileDownloadService } from '../services/business/FileDownloadService';
+import { CoreService } from '../services/business/messages/MessagesController';
+import { FileDownloadService } from '../services/business/files/DownloadController';
 import { Message, MessageType, MessageStatus, ChatType, MediaInfo, FileInfo, MessageContent, PollInfo,
   ForwardInfo, TextEntity, GroupEventType, SystemMessageType, SystemMessageParams,
   PollOption, InlineKeyboardMarkup, ReplyKeyboardMarkup, DiceInfo, PaidMediaInfo, GiftInfo, GiveawayInfo,
   UPDATE_MASK_NEW_MESSAGE, UPDATE_MASK_MESSAGE_SENT, UPDATE_MASK_MESSAGE_FAILED,
   UPDATE_MASK_MESSAGE_EDITED, UPDATE_MASK_MESSAGE_DELETED, UPDATE_MASK_CHAT_ACTION,
-  UPDATE_MASK_FILE_PROGRESS, UPDATE_MASK_CONNECTION, UPDATE_MASK_USER_AVATAR } from '../models/TDLibData';
+  UPDATE_MASK_FILE_PROGRESS, UPDATE_MASK_CONNECTION, UPDATE_MASK_USER_AVATAR,
+  FileType, DownloadPriority, DownloadEvent, DownloadCompleteData } from '../models/TDLibData';
 import { EventBus } from '../utils/event/EventBus';
 import { formatString } from '../utils/i18n/ResourceHelper';
 
@@ -964,11 +965,77 @@ export class ChatPageViewModel {
     return this.fileDownloadMap.get(fileId);
   }
 
-  public async triggerFileDownload(fileId: number, priority: number = 1): Promise<void> {
+  public async autoLoadVisibleMedia(startIndex: number, endIndex: number): Promise<void> {
     try {
-      await this.CoreService.downloadFile(fileId, priority, 0, 0, false);
+      for (let i = startIndex; i <= endIndex; i++) {
+        const message = this.messageDataSource.getData(i);
+        if (!message || !message.media || !message.media.tdlibFileId) {
+          continue;
+        }
+
+        const fileType = this.mapMessageTypeToFileType(message.type);
+        
+        if (fileType === FileType.IMAGE || fileType === FileType.VIDEO) {
+          await FileDownloadService.getInstance().downloadFile(
+            message.media.tdlibFileId,
+            fileType,
+            DownloadPriority.NORMAL,
+            message.id,
+            this.chatId,
+            message.media.size
+          );
+        } else if (fileType === FileType.STICKER) {
+          await FileDownloadService.getInstance().downloadFile(
+            message.media.tdlibFileId,
+            fileType,
+            DownloadPriority.LOW,
+            message.id,
+            this.chatId,
+            message.media.size
+          );
+        }
+      }
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, `autoLoadVisibleMedia failed: ${error}`);
+    }
+  }
+
+  public async triggerFileDownload(fileId: number, priority: DownloadPriority = DownloadPriority.HIGH, messageType?: MessageType): Promise<void> {
+    try {
+      const fileType = this.mapMessageTypeToFileType(messageType);
+      await FileDownloadService.getInstance().downloadFile(
+        fileId,
+        fileType,
+        priority,
+        undefined,
+        this.chatId
+      );
     } catch (error) {
       hilog.error(DOMAIN, TAG, `downloadFile failed: ${error}`);
+    }
+  }
+
+  private mapMessageTypeToFileType(messageType?: MessageType): FileType {
+    if (!messageType) return FileType.DOCUMENT;
+    switch (messageType) {
+      case MessageType.PHOTO:
+        return FileType.IMAGE;
+      case MessageType.VIDEO:
+        return FileType.VIDEO;
+      case MessageType.AUDIO:
+        return FileType.AUDIO;
+      case MessageType.VOICE_NOTE:
+        return FileType.VOICE_NOTE;
+      case MessageType.DOCUMENT:
+        return FileType.DOCUMENT;
+      case MessageType.STICKER:
+        return FileType.STICKER;
+      case MessageType.ANIMATION:
+        return FileType.ANIMATION;
+      case MessageType.VIDEO_NOTE:
+        return FileType.VIDEO_NOTE;
+      default:
+        return FileType.DOCUMENT;
     }
   }
 
@@ -2841,6 +2908,36 @@ export class ChatPageViewModel {
     }
   };
 
+  private handleFileDownloadComplete = (data?: Object): void => {
+    if (!data) {
+      return;
+    }
+    const downloadData = data as DownloadCompleteData;
+    const messages = this.messageDataSource.getAllMessages();
+    let updated = false;
+    
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (msg.media?.tdlibFileId === downloadData.fileId && !msg.file?.path) {
+        msg.file = {
+          id: downloadData.fileId,
+          remoteId: '',
+          size: msg.media.size || 0,
+          path: downloadData.localPath.startsWith('file://') ? downloadData.localPath : 'file://' + downloadData.localPath,
+          mimeType: msg.media.mimeType,
+          fileName: msg.media.fileName
+        };
+        this.messageDataSource.updateMessage(msg);
+        updated = true;
+        hilog.info(DOMAIN, TAG, `Updated file path for message ${msg.id}`);
+      }
+    }
+    
+    if (updated) {
+      hilog.info(DOMAIN, TAG, `Updated ${updated} messages with downloaded file path`);
+    }
+  };
+
   // ==================== 消息列表操作（不可变更新） ====================
   private appendMessage(msg: Message): void {
     // 追加新消息到列表尾部（不限制缓存数量，保留所有消息）
@@ -2875,10 +2972,13 @@ export class ChatPageViewModel {
     // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
     this.eventBus.on('core:fileDownloadProgress', this.handleCoreFileDownloadProgress);
     this.eventBus.on('core:connectionStateUpdated', this.handleCoreConnectionState);
-    // ⭐ 监听用户头像下载完成事件
-    this.eventBus.on('core:userAvatarDownloaded', this.handleCoreUserAvatarDownloaded);
+    // ⭐ 监听用户头像下载完成事件（从 FileDownloadService）
+    this.eventBus.on('file:userAvatarDownloaded', this.handleCoreUserAvatarDownloaded);
     // ⭐ Nagram 参考：监听批量更新事件（位掩码驱动增量刷新）
     this.eventBus.on('core:batchUpdate', this.handleBatchUpdate);
+    
+    // ⭐ 监听文件下载完成事件，更新消息对象的文件路径
+    FileDownloadService.getInstance().on(DownloadEvent.COMPLETE, this.handleFileDownloadComplete);
   }
 
   private unregisterEventListeners(): void {
@@ -2890,10 +2990,13 @@ export class ChatPageViewModel {
     this.eventBus.off('core:chatAction', this.handleCoreChatAction);
     this.eventBus.off('core:fileDownloadProgress', this.handleCoreFileDownloadProgress);
     this.eventBus.off('core:connectionStateUpdated', this.handleCoreConnectionState);
-    // ⭐ 取消监听用户头像下载完成事件
-    this.eventBus.off('core:userAvatarDownloaded', this.handleCoreUserAvatarDownloaded);
+    // ⭐ 取消监听用户头像下载完成事件（从 FileDownloadService）
+    this.eventBus.off('file:userAvatarDownloaded', this.handleCoreUserAvatarDownloaded);
     // ⭐ Nagram 参考：取消监听批量更新事件
     this.eventBus.off('core:batchUpdate', this.handleBatchUpdate);
+    
+    // ⭐ 取消监听文件下载完成事件
+    FileDownloadService.getInstance().off(DownloadEvent.COMPLETE, this.handleFileDownloadComplete);
   }
 
 }

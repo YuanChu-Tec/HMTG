@@ -7,7 +7,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { display } from '@kit.ArkUI';
 import { EventBus } from '../utils/event/EventBus';
 import { BadgeManager } from '../utils/storage/BadgeManager';
-import { TdLibEventNames } from '../services/api';
+import { TdLibEventNames } from '../services/core/api';
 import { Badge } from '../ui_kit';
 import { HdsTabs, HdsTabsController, hdsMaterial } from '@kit.UIDesignKit';
 

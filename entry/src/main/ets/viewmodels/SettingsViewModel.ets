@@ -1,9 +1,9 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { bundleManager } from '@kit.AbilityKit';
-import { CoreService } from '../services/business/CoreService';
+import { CoreService } from '../services/business/messages/MessagesController';
 import { LogService } from '../utils/log/LogService';
 import { ErrorHandler } from '../utils/error/ErrorHandler';
-import { FileDownloadService } from '../services/business/FileDownloadService';
+import { FileDownloadService } from '../services/business/files/DownloadController';
 import { FileType, DownloadPriority } from '../models/TDLibData';
 import { EventBus } from '../utils/event/EventBus';
 import { fileIo as fs } from '@kit.CoreFileKit';
@@ -51,14 +51,14 @@ export class SettingsViewModel {
   }
   
   private registerEventListeners(): void {
-    // ⭐ 使用 CoreService 领域事件替代 TDLib 原始事件
-    this.eventBus.on('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    // ⭐ 使用 FileDownloadService 事件替代 CoreService 事件
+    this.eventBus.on('file:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.on('core:userUpdated', this.handleCoreUserUpdated.bind(this));
     this.eventBus.on('core:userFullInfoUpdated', this.handleCoreUserFullInfoUpdated.bind(this));
   }
   
   private unregisterEventListeners(): void {
-    this.eventBus.off('core:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
+    this.eventBus.off('file:userAvatarDownloaded', this.handleCoreAvatarDownloaded.bind(this));
     this.eventBus.off('core:userUpdated', this.handleCoreUserUpdated.bind(this));
     this.eventBus.off('core:userFullInfoUpdated', this.handleCoreUserFullInfoUpdated.bind(this));
   }
@@ -278,7 +278,7 @@ export class SettingsViewModel {
     this.fileDownloadService.downloadFile(
       fileId,
       FileType.PROFILE_PHOTO,
-      DownloadPriority.URGENT
+      DownloadPriority.HIGH
     ).then(async (path: string) => {
       hilog.info(DOMAIN, TAG, `✅ Avatar downloaded: ${path}`);
       

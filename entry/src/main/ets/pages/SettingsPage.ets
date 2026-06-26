@@ -12,7 +12,7 @@
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { router, promptAction, window } from '@kit.ArkUI';
-import { ThemeService } from '../services/business/ThemeService';
+import { ThemeService } from '../services/business/theme/ChatThemeController';
 import { ErrorHandler } from '../utils/error/ErrorHandler';
 import { LogService } from '../utils/log/LogService';
 import { Avatar } from '../ui_kit';

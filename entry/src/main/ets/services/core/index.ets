@@ -20,8 +20,8 @@ export type { RequestConfig } from './tdlib/TDLibExecutor';
 export { TDLibReceiver } from './tdlib/TDLibReceiver';
 
 // Auth
-export { AuthService } from '../business/AuthService';
-export { AuthCache } from '../business/AuthCache';
+export { AuthService } from '../business/auth/AuthService';
+export { AuthCache } from '../business/kernel/SecureStorage';
 // Auth 相关类型（从 AuthService 统一导出）
 export type {
   TokenType,
@@ -38,7 +38,7 @@ export type {
   VerificationResult,
   PermissionStatus,
   PhoneValidationResult
-} from '../business/AuthService';
+} from '../business/auth/AuthService';
 
 // Callback
 export { TDLibCallbackDispatcher } from './callback/TDLibCallbackDispatcher';

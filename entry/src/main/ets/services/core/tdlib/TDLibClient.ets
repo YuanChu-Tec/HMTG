@@ -1,6 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { worker, MessageEvents } from '@kit.ArkTS';
-import { getTdLibParameters } from '../../config/TelegramConfig';
+import { getTdLibParameters } from '../config/TelegramConfig';
 import { common } from '@kit.AbilityKit';
 import { TDLibReceiver } from './TDLibReceiver';
 import { MessageType, ControlCommand, ExecuteResult, Update, BatchUpdateMessage, ErrorMessage, Request, Response, Control } from '../../../workers/TdlibWorkerProtocol';

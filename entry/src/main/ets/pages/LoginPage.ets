@@ -7,7 +7,7 @@ import { router, promptAction, window } from '@kit.ArkUI';
 import { emitter } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
 import { AuthService, TDLibClient } from '../services/core';
-import { TdApiFactory, TDLibApi } from '../services/api';
+import { TdApiFactory, TDLibApi } from '../services/core/api';
 import { AuthState } from '../models';
 import { PhoneInputComponent } from '../ui_kit/components/PhoneInputComponent';
 import { CountryInfo, CountryCodeHelper } from '../utils/CountryCodeHelper';

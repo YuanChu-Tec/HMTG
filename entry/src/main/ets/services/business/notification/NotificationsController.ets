@@ -4,7 +4,7 @@
  */
 
 import { notificationManager } from '@kit.NotificationKit';
-import { Message, Chat } from '../../models';
+import { Message, Chat } from '../../../models';
 
 /**
  * 通知服务（单例）
