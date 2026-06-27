@@ -884,7 +884,7 @@ Worker:    TdlibWorker.ets (独立消息循环线程)
 
 如果您在使用过程中遇到问题，或有改进建议，欢迎提交 Issue。
 
-- GitHub Issues：https://github.com/Zitann/HarmonyOS-Haps/issues
+- GitHub Issues：https://github.com/YuanChu-Tec/HMTG/issues
 - Telegram：https://t.me/HMTGchannel 、 https://t.me/HMTGchat
 - QQ 群：1075753335
 
